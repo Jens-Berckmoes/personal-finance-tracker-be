@@ -10,6 +10,8 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.Optional;
+
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
@@ -26,7 +28,7 @@ public class UserServiceTest {
     private ValidationService validationService;
 
     @InjectMocks
-    private UserService userService;
+    private UserServiceImpl userService;
 
     private User user;
 
@@ -150,8 +152,111 @@ public class UserServiceTest {
 
         // Assert
         assertNotNull(registeredUser);
-        verify(validationService, times(1)).isValidUsername(user.getUsername());
+        verify(validationService, times(2)).isValidUsername(user.getUsername());
         verify(validationService, times(1)).isValidEmail(user.getEmail());
     }
+
+    @Test
+    public void givenExistingUsername_whenFindByUsername_thenReturnUser() {
+        // Arrange
+        when(userRepository.findByUsername("testuser")).thenReturn(Optional.of(user));
+        when(validationService.isValidUsername(user.getUsername())).thenReturn(true);
+
+        // Act
+        final Optional<User> possibleUser = userService.findByUsername("testuser");
+
+        // Assert
+        assertNotNull(possibleUser);
+        assertTrue(possibleUser.isPresent());
+        final User foundUser = possibleUser.get();
+        assertEquals("testuser", foundUser.getUsername());
+        assertEquals("password123", foundUser.getPassword());
+        assertEquals("test@example.com", foundUser.getEmail());
+        verify(userRepository, times(1)).findByUsername("testuser");
+    }
+
+
+    @Test
+    public void givenNonExistingUsername_whenFindByUsername_thenReturnEmptyOptional() {
+        // Arrange
+        when(userRepository.findByUsername("nonexistent")).thenReturn(Optional.empty());
+        when(validationService.isValidUsername("nonexistent")).thenReturn(true);
+
+        // Act
+        Optional<User> possibleUser = userService.findByUsername("nonexistent");
+
+        // Assert
+        assertNotNull(possibleUser);
+        assertFalse(possibleUser.isPresent()); // Assert that the Optional is empty
+        verify(userRepository, times(1)).findByUsername("nonexistent");
+    }
+
+
+
+    @Test
+    public void givenNullUsername_whenFindByUsername_thenThrowException() {
+        // Act and Assert
+        final Exception exception = assertThrows(InvalidUserException.class, () -> {
+            userService.findByUsername(null);
+        });
+
+        assertEquals("Username is invalid", exception.getMessage());
+        verify(userRepository, never()).findByUsername(anyString());
+    }
+
+
+    @Test
+    public void givenEmptyUsername_whenFindByUsername_thenThrowException() {
+        // Act and Assert
+        final Exception exception = assertThrows(InvalidUserException.class, () -> {
+            userService.findByUsername("");
+        });
+
+        assertEquals("Username is invalid", exception.getMessage());
+        verify(userRepository, never()).findByUsername(anyString());
+    }
+
+
+    @Test
+    public void givenExistingUsername_whenRegister_thenThrowException() {
+        // Arrange
+        when(userRepository.findByUsername(user.getUsername())).thenReturn(Optional.of(user));
+        when(validationService.isValidUsername(user.getUsername())).thenReturn(true);
+
+        // Act and Assert
+        final Exception exception = assertThrows(InvalidUserException.class, () -> userService.register(user));
+
+        assertEquals("Username already taken", exception.getMessage());
+        verify(userRepository, never()).save(any(User.class));
+    }
+
+    @Test
+    public void givenUsernameInDifferentCase_whenFindByUsername_thenReturnEmpty() {
+        // Arrange
+        when(userRepository.findByUsername("TestUser")).thenReturn(Optional.empty());
+        when(validationService.isValidUsername("TestUser")).thenReturn(true);
+        // Act
+        final Optional<User> possibleUser = userService.findByUsername("TestUser");
+
+        // Assert
+        assertTrue(possibleUser.isEmpty());
+    }
+
+    @Test
+    public void givenValidUser_whenRegister_thenPasswordHashingServiceIsCalled() {
+        // Arrange
+        when(userRepository.save(user)).thenReturn(user);
+        when(hashingService.hashPassword(user.getPassword())).thenReturn("hashed_password123");
+        when(validationService.isValidUsername(user.getUsername())).thenReturn(true);
+        when(validationService.isValidEmail(user.getEmail())).thenReturn(true);
+
+        // Act
+        final User registeredUser = userService.register(user);
+
+        // Assert
+        verify(hashingService, times(1)).hashPassword("password123");
+        assertEquals("hashed_password123", registeredUser.getPassword());
+    }
+
 
 }
