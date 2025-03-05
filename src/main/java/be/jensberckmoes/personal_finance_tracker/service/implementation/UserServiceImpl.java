@@ -1,8 +1,11 @@
-package be.jensberckmoes.personal_finance_tracker.service;
+package be.jensberckmoes.personal_finance_tracker.service.implementation;
 
 import be.jensberckmoes.personal_finance_tracker.exception.InvalidUserException;
 import be.jensberckmoes.personal_finance_tracker.model.User;
 import be.jensberckmoes.personal_finance_tracker.repository.UserRepository;
+import be.jensberckmoes.personal_finance_tracker.service.HashingService;
+import be.jensberckmoes.personal_finance_tracker.service.UserService;
+import be.jensberckmoes.personal_finance_tracker.service.ValidationService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -10,7 +13,7 @@ import java.util.Objects;
 import java.util.Optional;
 
 @Service
-public class UserServiceImpl implements UserService{
+public class UserServiceImpl implements UserService {
 
     @Autowired
     private UserRepository userRepository;
@@ -29,7 +32,7 @@ public class UserServiceImpl implements UserService{
             throw new InvalidUserException("Username already taken");
         }
         if(!validationService.isValidPassword(user.getPassword())){
-            throw new InvalidUserException("User has invalid password. Password should be 8+ characters long, 1 uppercase, 1 lowercase, 1 number and 1 special character(@$!%*?&).");
+            throw new InvalidUserException("User has invalid password. Password should be between 12-64 characters long, should contain 1 uppercase, 1 lowercase, 1 number and 1 special character(!.*_-).");
         }
         if (!validationService.isValidEmail(user.getEmail())) {
             throw new InvalidUserException("User has invalid email. Email should be in the form (test@example.com).");

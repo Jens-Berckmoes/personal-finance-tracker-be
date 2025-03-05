@@ -1,5 +1,6 @@
-package be.jensberckmoes.personal_finance_tracker.service;
+package be.jensberckmoes.personal_finance_tracker.service.implementation;
 
+import be.jensberckmoes.personal_finance_tracker.service.ValidationService;
 import org.springframework.stereotype.Service;
 
 import java.util.Objects;
