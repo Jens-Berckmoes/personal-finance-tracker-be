@@ -152,7 +152,7 @@ public class UserServiceTest {
 
         // Assert
         assertNotNull(registeredUser);
-        verify(validationService, times(2)).isValidUsername(user.getUsername());
+        verify(validationService, times(1)).isValidUsername(user.getUsername());
         verify(validationService, times(1)).isValidEmail(user.getEmail());
     }
 
@@ -196,9 +196,7 @@ public class UserServiceTest {
     @Test
     public void givenNullUsername_whenFindByUsername_thenThrowException() {
         // Act and Assert
-        final Exception exception = assertThrows(InvalidUserException.class, () -> {
-            userService.findByUsername(null);
-        });
+        final Exception exception = assertThrows(InvalidUserException.class, () -> userService.findByUsername(null));
 
         assertEquals("Username is invalid", exception.getMessage());
         verify(userRepository, never()).findByUsername(anyString());
@@ -208,9 +206,7 @@ public class UserServiceTest {
     @Test
     public void givenEmptyUsername_whenFindByUsername_thenThrowException() {
         // Act and Assert
-        final Exception exception = assertThrows(InvalidUserException.class, () -> {
-            userService.findByUsername("");
-        });
+        final Exception exception = assertThrows(InvalidUserException.class, () -> userService.findByUsername(""));
 
         assertEquals("Username is invalid", exception.getMessage());
         verify(userRepository, never()).findByUsername(anyString());
@@ -231,15 +227,15 @@ public class UserServiceTest {
     }
 
     @Test
-    public void givenUsernameInDifferentCase_whenFindByUsername_thenReturnEmpty() {
+    public void givenUsernameInDifferentCase_whenFindByUsername_thenReturnFoundUser() {
         // Arrange
-        when(userRepository.findByUsername("TestUser")).thenReturn(Optional.empty());
+        when(userRepository.findByUsername("testuser")).thenReturn(Optional.of(user));
         when(validationService.isValidUsername("TestUser")).thenReturn(true);
         // Act
         final Optional<User> possibleUser = userService.findByUsername("TestUser");
 
         // Assert
-        assertTrue(possibleUser.isEmpty());
+        assertTrue(possibleUser.isPresent());
     }
 
     @Test

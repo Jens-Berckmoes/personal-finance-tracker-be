@@ -7,11 +7,11 @@ import java.util.Optional;
 
 @Repository
 public class UserRepositoryImpl implements UserRepository {
-    public User save(User user) {
+    public User save(final User user) {
         return null;
     }
 
-    public Optional<User> findByUsername(String username) {
-        return null;
+    public Optional<User> findByUsername(final String username) {
+        return Optional.empty();
     }
 }

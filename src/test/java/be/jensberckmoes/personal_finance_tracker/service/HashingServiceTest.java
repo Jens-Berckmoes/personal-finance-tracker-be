@@ -54,8 +54,8 @@ public class HashingServiceTest {
 
     @Test
     public void givenShortPassword_whenHashPassword_thenReturnHashedPassword() {
-        String password = "a";
-        String hashedPassword = hashingService.hashPassword(password);
+        final String password = "a";
+        final String hashedPassword = hashingService.hashPassword(password);
 
         assertNotNull(hashedPassword);
         assertFalse(hashedPassword.isEmpty());
@@ -64,8 +64,8 @@ public class HashingServiceTest {
 
     @Test
     public void givenLongPassword_whenHashPassword_thenReturnHashedPassword() {
-        String password = "a".repeat(100);
-        String hashedPassword = hashingService.hashPassword(password);
+        final String password = "a".repeat(100);
+        final String hashedPassword = hashingService.hashPassword(password);
 
         assertNotNull(hashedPassword);
         assertFalse(hashedPassword.isEmpty());

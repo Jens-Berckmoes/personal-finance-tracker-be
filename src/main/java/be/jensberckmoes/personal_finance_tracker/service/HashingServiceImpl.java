@@ -11,7 +11,7 @@ public class HashingServiceImpl implements HashingService {
     private final PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
     @Override
-    public String hashPassword(String password) {
+    public String hashPassword(final String password) {
         if (password == null) {
             throw new InvalidPasswordException("Password cannot be null");
         }
