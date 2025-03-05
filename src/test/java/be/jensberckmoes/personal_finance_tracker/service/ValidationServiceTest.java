@@ -48,7 +48,7 @@ public class ValidationServiceTest {
 
     @ParameterizedTest
     @MethodSource("providedValidPasswordsForValidation")
-    public void testValidPasswords(final String password, final boolean expectedResult) {
+    public void testPasswordsForValidCases(final String password, final boolean expectedResult) {
         assertEquals(expectedResult, validationService.isValidPassword(password));
     }
 
@@ -66,13 +66,13 @@ public class ValidationServiceTest {
 
     @ParameterizedTest
     @MethodSource("providedPasswordsForSpecialCharactersValidation")
-    public void testPasswordsWithInvalidCharacters(final String password, final boolean expectedResult) {
+    public void testPasswordsWithSpecialCharacters(final String password, final boolean expectedResult) {
         assertEquals(expectedResult, validationService.isValidPassword(password));
     }
 
     @ParameterizedTest
     @MethodSource("providedPasswordsForNullOrEmptyValidation")
-    public void testNullOrEmptyPasswords(final String password, final boolean expectedResult) {
+    public void testPasswordsForNullOrEmptyValues(final String password, final boolean expectedResult) {
         assertEquals(expectedResult, validationService.isValidPassword(password));
     }
 
@@ -114,25 +114,26 @@ public class ValidationServiceTest {
 
     private static Stream<Arguments> providedEmailsForLengthBoundaries() {
         return Stream.of(
-                Arguments.of("a".repeat(65) + "@" + "b".repeat(255) + "." + "c".repeat(63), false),    // Local part of e-mail has too many characters. Limited to 64.
-                Arguments.of("a".repeat(64) + "@" + "b".repeat(256) + "." + "c".repeat(63), false),             // Domain part of e-mail has too many characters. Limited to 255.
-                Arguments.of("a".repeat(64) + "@" + "b".repeat(255) + "." + "c".repeat(64), false),             // Top level domain part of e-mail has too many characters. Limited to 63.
-                Arguments.of("a".repeat(65) + "@" + "b".repeat(256) + "." + "c".repeat(63), false),             // Local part and domain part of e-mail has too many characters. Limited to 64 and 255.
-                Arguments.of("a".repeat(65) + "@" + "b".repeat(255) + "." + "c".repeat(64), false),             // Local part and top level domain part of e-mail has too many characters. Limited to 64 and 63.
-                Arguments.of("a".repeat(64) + "@" + "b".repeat(256) + "." + "c".repeat(64), false)              // Domain part and top level domain part of Email has too many characters. Limited to 255 and 63.
+                Arguments.of(getEmailString(65, 255, 63), false),    // Local part of e-mail has too many characters. Limited to 64.
+                Arguments.of(getEmailString(64, 256, 63), false),    // Domain part of e-mail has too many characters. Limited to 255.
+                Arguments.of(getEmailString(64, 255, 64), false),    // Top level domain part of e-mail has too many characters. Limited to 63.
+                Arguments.of(getEmailString(65, 256, 63), false),    // Local part and domain part of e-mail has too many characters. Limited to 64 and 255.
+                Arguments.of(getEmailString(65, 255, 64), false),    // Local part and top level domain part of e-mail has too many characters. Limited to 64 and 63.
+                Arguments.of(getEmailString(64, 256, 64), false)     // Domain part and top level domain part of Email has too many characters. Limited to 255 and 63.
         );
     }
 
     private static Stream<Arguments> providedEmailsWithInvalidCharacters() {
         return Stream.of(
                 Arguments.of("examplecom", false),         // Missing dot between domains.
-                Arguments.of("user@exämple.com", false)    // International letter, not allowed.
+                Arguments.of("user@exämple.com", false),   // International letter, not allowed.
+                Arguments.of("user@exam_ple.com", false)   // Underscore in domain (not allowed in domain names)
         );
     }
 
     private static Stream<Arguments> providedEmailsForNullOrEmptyValidation() {
         return Stream.of(
-                Arguments.of("", false),     // Empty e-mail
+                Arguments.of("", false),     // Empty input
                 Arguments.of(null, false)    // Null e-mail
         );
     }
@@ -140,14 +141,19 @@ public class ValidationServiceTest {
     private static Stream<Arguments> providedValidPasswordsForValidation() {
         return Stream.of(
                 Arguments.of("Ab!456789101", true),
-                Arguments.of("Ab!456789!*-_.", true)    // Valid with all allowed special characters
+                Arguments.of("Ab!456789!*-_.", true),    // Valid with all allowed special characters
+                Arguments.of("!Ab1_12345678", true),     // Valid even with trailing special characters.
+                Arguments.of("Ab1_12345678!", true) ,    // Valid even with trailing special characters.
+                Arguments.of("Ab!!1234567!!", true)        // Multiple allowed special characters
         );
     }
 
     private static Stream<Arguments> providedPasswordsForLengthBoundaries() {
         return Stream.of(
                 Arguments.of("Ab!1" + "1".repeat(2), false),    // Less than twelve characters
-                Arguments.of("Ab!1" + "1".repeat(61), false)    // More than 64 characters
+                Arguments.of("Ab!1" + "1".repeat(61), false),   // More than 64 characters
+                Arguments.of("Ab!1" + "1".repeat(8), true),     // Exactly 12 (minimum)
+                Arguments.of("Ab!1" + "1".repeat(60), true)     // Exactly 64 (maximum)
         );
     }
 
@@ -168,13 +174,15 @@ public class ValidationServiceTest {
                 .chars()
                 .mapToObj(c -> Arguments.of("Ab" + (char) c + "1".repeat(13), false)); // Invalid for each disallowed char
 
-        return Stream.concat(allowedCharTests, disallowedCharTests);
+        return Stream.concat(
+                Stream.concat(allowedCharTests, disallowedCharTests),
+                Stream.of(Arguments.of("Ab@#1234567", false)));
     }
 
 
     private static Stream<Arguments> providedPasswordsForNullOrEmptyValidation() {
         return Stream.of(
-                Arguments.of("", false),     // Empty password
+                Arguments.of("", false),     // Empty input
                 Arguments.of(null, false)    // Null password
         );
     }
@@ -197,9 +205,16 @@ public class ValidationServiceTest {
 
     private static Stream<Arguments> providedUsernamesForNullOrEmptyValidation() {
         return Stream.of(
-                Arguments.of("", false),     // Empty username
+                Arguments.of("", false),     // Empty input
                 Arguments.of(null, false)    // Null username
         );
     }
+
+    private static String getEmailString(final int amountOfLocalPart,
+                                         final int amountOfDomainPart,
+                                         final int amountOfTopLevelDomain) {
+        return "a".repeat(amountOfLocalPart) + "@" + "b".repeat(amountOfDomainPart) + "." + "c".repeat(amountOfTopLevelDomain);
+    }
+
 }
 
