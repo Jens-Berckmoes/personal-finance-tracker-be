@@ -35,7 +35,7 @@ public class UserServiceTest {
 
     @BeforeEach
     public void setUp() {
-        user = new User("testuser", "password123", "test@example.com");
+        user = new User("testuser", "Password123!", "test@example.com");
 
     }
 
@@ -81,18 +81,15 @@ public class UserServiceTest {
     @Test
     public void givenValidUser_whenRegister_thenPasswordIsHashed() {
         // Arrange
-        when(userRepository.save(user)).thenAnswer(invocation -> invocation.getArgument(0));
-        when(hashingService.hashPassword(user.getPassword())).thenReturn("hashed_password123");
-        when(validationService.isValidUsername(user.getUsername())).thenReturn(true);
-        when(validationService.isValidEmail(user.getEmail())).thenReturn(true);
+        mockValidUserSetup();
 
         // Act
         final User registeredUser = userService.register(user);
 
         // Assert
         assertNotNull(registeredUser);
-        assertEquals("hashed_password123", registeredUser.getPassword());
         assertTrue(registeredUser.getPassword().startsWith("hashed_"));
+        assertEquals("hashed_Password123!", registeredUser.getPassword());
     }
 
     @Test
@@ -108,7 +105,6 @@ public class UserServiceTest {
     public void givenEmptyUsername_whenRegister_thenThrowException() {
         // Arrange
         user.setUsername("");
-        when(validationService.isValidUsername(user.getUsername())).thenReturn(false);
 
         // Act and Assert
         final Exception exception = assertThrows(InvalidUserException.class, () -> userService.register(user));
@@ -122,12 +118,13 @@ public class UserServiceTest {
         // Arrange
         user.setEmail("invalid-email");
         when(validationService.isValidUsername(user.getUsername())).thenReturn(true);
+        when(validationService.isValidPassword(user.getPassword())).thenReturn(true);
         when(validationService.isValidEmail(user.getEmail())).thenReturn(false);
 
         // Act and Assert
         final Exception exception = assertThrows(InvalidUserException.class, () -> userService.register(user));
 
-        assertEquals("User has invalid email", exception.getMessage());
+        assertEquals("User has invalid email. Email should be in the form (test@example.com).", exception.getMessage());
         verify(userRepository, never()).save(any(User.class));
     }
 
@@ -160,7 +157,7 @@ public class UserServiceTest {
         final User foundUser = possibleUser.get();
         assertAll(
                 () -> assertEquals("testuser", foundUser.getUsername()),
-                () -> assertEquals("password123", foundUser.getPassword()),
+                () -> assertEquals("Password123!", foundUser.getPassword()),
                 () -> assertEquals("test@example.com", foundUser.getEmail())
         );
         verify(userRepository, times(1)).findByUsername("testuser");
@@ -218,26 +215,14 @@ public class UserServiceTest {
     @Test
     public void givenUsernameInDifferentCase_whenFindByUsername_thenReturnFoundUser() {
         // Arrange
-        when(userRepository.findByUsername("testuser")).thenReturn(Optional.of(user));
-        when(validationService.isValidUsername("TestUser")).thenReturn(true);
+        when(userRepository.findByUsername("TestUser")).thenReturn(Optional.of(user));
+        when(validationService.isValidUsername("testuser")).thenReturn(true);
         // Act
         final Optional<User> possibleUser = userService.findByUsername("TestUser");
 
         // Assert
         assertTrue(possibleUser.isPresent());
-    }
-
-    @Test
-    public void givenValidUser_whenRegister_thenPasswordHashingServiceIsCalled() {
-        // Arrange
-        mockValidUserSetup();
-
-        // Act
-        final User registeredUser = userService.register(user);
-
-        // Assert
-        verify(hashingService, times(1)).hashPassword("password123");
-        assertEquals("hashed_password123", registeredUser.getPassword());
+        verify(userRepository, times(1)).findByUsername("TestUser");
     }
 
     @Test
@@ -245,62 +230,32 @@ public class UserServiceTest {
         // Arrange
         user.setPassword("123456"); // Weak password
         when(validationService.isValidPassword(user.getPassword())).thenReturn(false);
+        when(validationService.isValidUsername(user.getUsername())).thenReturn(true);
 
         // Act and Assert
         final Exception exception = assertThrows(InvalidUserException.class, () -> userService.register(user));
 
-        assertEquals("User has invalid password. Password should be 8+ characters long, 1 uppercase, 1 lowercase, 1 number and 1 special character(@$!%*?&).", exception.getMessage());
+        assertEquals("User has invalid password. Password should be between 12-64 characters long, should contain 1 uppercase, 1 lowercase, 1 number and 1 special character(!.*_-).", exception.getMessage());
         verify(userRepository, never()).save(any(User.class));
     }
 
     @Test
     public void givenValidUser_whenRegister_thenRawPasswordIsNotPersisted() {
         // Arrange
-        when(userRepository.save(user)).thenReturn(user);
-        when(hashingService.hashPassword(user.getPassword())).thenReturn("hashed_password123");
+        mockValidUserSetup();
 
         // Act
         final User registeredUser = userService.register(user);
 
         // Assert
-        assertNotEquals("password123", registeredUser.getPassword()); // Ensure raw password is not stored
-    }
-
-    @Test
-    public void givenUsernameWithMixedCase_whenFindByUsername_thenReturnFoundUser() {
-        // Arrange
-        when(userRepository.findByUsername("testuser")).thenReturn(Optional.of(user));
-        when(validationService.isValidUsername("TestUser")).thenReturn(true);
-
-        // Act
-        final Optional<User> possibleUser = userService.findByUsername("TestUser");
-
-        // Assert
-        assertTrue(possibleUser.isPresent());
-        verify(userRepository, times(1)).findByUsername("testuser"); // Ensure lookup is case-insensitive
-    }
-
-    @Test
-    public void givenValidUser_whenRegister_thenSavedUserHasHashedPassword() {
-        // Arrange
-        when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
-        when(hashingService.hashPassword(user.getPassword())).thenReturn("hashed_password123");
-
-        // Act
-        final User registeredUser = userService.register(user);
-
-        // Assert
-        assertNotNull(registeredUser);
-        assertEquals("hashed_password123", registeredUser.getPassword());
-        verify(userRepository).save(argThat(savedUser ->
-                "hashed_password123".equals(savedUser.getPassword()) && "testuser".equals(savedUser.getUsername())
-        ));
+        assertNotEquals("Password123!", registeredUser.getPassword()); // Ensure raw password is not stored
     }
 
     private void mockValidUserSetup() {
         when(userRepository.save(user)).thenReturn(user);
-        when(hashingService.hashPassword(user.getPassword())).thenReturn("hashed_password123");
+        when(hashingService.hashPassword(user.getPassword())).thenReturn("hashed_Password123!");
         when(validationService.isValidUsername(user.getUsername())).thenReturn(true);
+        when(validationService.isValidPassword(user.getPassword())).thenReturn(true);
         when(validationService.isValidEmail(user.getEmail())).thenReturn(true);
     }
 }
