@@ -1,6 +1,7 @@
-package be.jensberckmoes.personal_finance_tracker.service;
+package be.jensberckmoes.personal_finance_tracker.unit.service;
 
 import be.jensberckmoes.personal_finance_tracker.exception.InvalidPasswordException;
+import be.jensberckmoes.personal_finance_tracker.service.HashingService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;

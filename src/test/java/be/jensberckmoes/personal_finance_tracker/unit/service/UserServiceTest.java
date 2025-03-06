@@ -1,8 +1,10 @@
-package be.jensberckmoes.personal_finance_tracker.service;
+package be.jensberckmoes.personal_finance_tracker.unit.service;
 
 import be.jensberckmoes.personal_finance_tracker.exception.InvalidUserException;
 import be.jensberckmoes.personal_finance_tracker.model.User;
 import be.jensberckmoes.personal_finance_tracker.repository.UserRepository;
+import be.jensberckmoes.personal_finance_tracker.service.HashingService;
+import be.jensberckmoes.personal_finance_tracker.service.ValidationService;
 import be.jensberckmoes.personal_finance_tracker.service.implementation.UserServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -35,7 +37,11 @@ public class UserServiceTest {
 
     @BeforeEach
     public void setUp() {
-        user = new User("testuser", "Password123!", "test@example.com");
+        user = User.builder()
+                .password("Password123!")
+                .username("testuser")
+                .email("test@example.com")
+                .build();
 
     }
 

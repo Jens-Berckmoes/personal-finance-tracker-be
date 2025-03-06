@@ -1,5 +1,6 @@
-package be.jensberckmoes.personal_finance_tracker.service;
+package be.jensberckmoes.personal_finance_tracker.unit.service;
 
+import be.jensberckmoes.personal_finance_tracker.service.ValidationService;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;

@@ -13,7 +13,7 @@ public class ValidationServiceImpl implements ValidationService {
         if (Objects.isNull(email) || email.isEmpty() || email.length() > 254) {
             return false;
         }
-        final String emailRegex = "^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$";
+        final String emailRegex = "^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,254}$";
         return email.matches(emailRegex);
     }
 
