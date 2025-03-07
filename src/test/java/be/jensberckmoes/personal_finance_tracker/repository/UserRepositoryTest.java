@@ -1,8 +1,7 @@
-package be.jensberckmoes.personal_finance_tracker.integration.repository;
+package be.jensberckmoes.personal_finance_tracker.repository;
 
 import be.jensberckmoes.personal_finance_tracker.model.Role;
 import be.jensberckmoes.personal_finance_tracker.model.User;
-import be.jensberckmoes.personal_finance_tracker.repository.UserRepository;
 import be.jensberckmoes.personal_finance_tracker.service.HashingService;
 import jakarta.persistence.EntityManager;
 import jakarta.validation.ConstraintViolationException;
