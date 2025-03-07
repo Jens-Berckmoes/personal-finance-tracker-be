@@ -5,7 +5,7 @@ import be.jensberckmoes.personal_finance_tracker.model.User;
 import be.jensberckmoes.personal_finance_tracker.repository.UserRepository;
 import be.jensberckmoes.personal_finance_tracker.service.HashingService;
 import be.jensberckmoes.personal_finance_tracker.service.ValidationService;
-import be.jensberckmoes.personal_finance_tracker.service.implementation.UserServiceImpl;
+import be.jensberckmoes.personal_finance_tracker.service.UserServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

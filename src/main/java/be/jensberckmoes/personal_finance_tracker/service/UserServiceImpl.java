@@ -1,11 +1,8 @@
-package be.jensberckmoes.personal_finance_tracker.service.implementation;
+package be.jensberckmoes.personal_finance_tracker.service;
 
 import be.jensberckmoes.personal_finance_tracker.exception.InvalidUserException;
 import be.jensberckmoes.personal_finance_tracker.model.User;
 import be.jensberckmoes.personal_finance_tracker.repository.UserRepository;
-import be.jensberckmoes.personal_finance_tracker.service.HashingService;
-import be.jensberckmoes.personal_finance_tracker.service.UserService;
-import be.jensberckmoes.personal_finance_tracker.service.ValidationService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 

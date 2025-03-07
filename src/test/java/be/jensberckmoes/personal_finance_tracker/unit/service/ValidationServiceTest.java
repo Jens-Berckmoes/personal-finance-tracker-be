@@ -152,9 +152,9 @@ public class ValidationServiceTest {
     private static Stream<Arguments> providedPasswordsForLengthBoundaries() {
         return Stream.of(
                 Arguments.of("Ab!1" + "1".repeat(2), false),    // Less than twelve characters
-                Arguments.of("Ab!1" + "1".repeat(61), false),   // More than 64 characters
+                Arguments.of("Ab!1" + "1".repeat(252), false),   // 256 (> 255) characters
                 Arguments.of("Ab!1" + "1".repeat(8), true),     // Exactly 12 (minimum)
-                Arguments.of("Ab!1" + "1".repeat(60), true)     // Exactly 64 (maximum)
+                Arguments.of("Ab!1" + "1".repeat(251), true)     // Exactly 255 (maximum)
         );
     }
 

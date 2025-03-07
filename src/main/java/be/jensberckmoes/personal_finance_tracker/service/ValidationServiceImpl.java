@@ -1,6 +1,5 @@
-package be.jensberckmoes.personal_finance_tracker.service.implementation;
+package be.jensberckmoes.personal_finance_tracker.service;
 
-import be.jensberckmoes.personal_finance_tracker.service.ValidationService;
 import org.springframework.stereotype.Service;
 
 import java.util.Objects;
@@ -10,19 +9,19 @@ public class ValidationServiceImpl implements ValidationService {
 
     @Override
     public boolean isValidEmail(final String email) {
-        if (Objects.isNull(email) || email.isEmpty() || email.length() > 254) {
+        if (Objects.isNull(email) || email.isEmpty() || email.length() > 255) {
             return false;
         }
-        final String emailRegex = "^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,254}$";
+        final String emailRegex = "^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,255}$";
         return email.matches(emailRegex);
     }
 
     @Override
     public boolean isValidPassword(final String password) {
-        if (Objects.isNull(password) || password.isBlank() || password.length() < 12 || password.length() > 64) {
+        if (Objects.isNull(password) || password.isBlank() || password.length() < 12 || password.length() > 255) {
             return false;
         }
-        final String passwordRegex = "^(?=.*[A-Z])(?=.*[a-z])(?=.*\\d)(?=.*[!.*_-])[A-Za-z\\d!.*_-]{12,64}$";
+        final String passwordRegex = "^(?=.*[A-Z])(?=.*[a-z])(?=.*\\d)(?=.*[!.*_-])[A-Za-z\\d!.*_-]{12,255}$";
         return password.matches(passwordRegex);
     }
 
