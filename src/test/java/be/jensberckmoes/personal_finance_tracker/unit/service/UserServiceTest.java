@@ -1,6 +1,9 @@
 package be.jensberckmoes.personal_finance_tracker.unit.service;
 
+import be.jensberckmoes.personal_finance_tracker.dto.UserCreateDto;
+import be.jensberckmoes.personal_finance_tracker.dto.UserDto;
 import be.jensberckmoes.personal_finance_tracker.exception.InvalidUserException;
+import be.jensberckmoes.personal_finance_tracker.model.Role;
 import be.jensberckmoes.personal_finance_tracker.model.User;
 import be.jensberckmoes.personal_finance_tracker.repository.UserRepository;
 import be.jensberckmoes.personal_finance_tracker.service.HashingService;
@@ -9,6 +12,7 @@ import be.jensberckmoes.personal_finance_tracker.service.UserServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -33,43 +37,68 @@ public class UserServiceTest {
     @InjectMocks
     private UserServiceImpl userService;
 
+    private UserCreateDto userCreateDto;
     private User user;
 
     @BeforeEach
     public void setUp() {
+        userCreateDto = UserCreateDto.builder()
+                .password("Password123!")
+                .username("testuser")
+                .email("test@example.com")
+                .build();
         user = User.builder()
                 .password("Password123!")
                 .username("testuser")
                 .email("test@example.com")
                 .build();
-
     }
 
     @Test
-    public void givenValidUser_whenRegister_thenUserIsNotNull() {
+    public void givenValidUserCreateDto_whenCreateUser_thenUserIsPersisted() {
         // Arrange
         mockValidUserSetup();
-
         // Act
-        final User registeredUser = userService.register(user);
+        final UserDto createdUser = userService.createUser(userCreateDto);
 
-        // Assert
-        assertNotNull(registeredUser);
+        assertEquals("testuser", createdUser.getUsername());
+        assertEquals("USER", createdUser.getRole());
+        assertEquals("test@example.com", createdUser.getEmail());
+
+        ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
+        verify(userRepository).save(userCaptor.capture());
+        User savedUser = userCaptor.getValue();
+
+        assertEquals("testuser", savedUser.getUsername());
+        assertEquals("hashed_Password123!", savedUser.getPassword());
+        assertEquals(Role.USER, savedUser.getRole());
+        assertEquals("test@example.com", savedUser.getEmail());
+
     }
+
 
     @Test
-    public void givenValidUser_whenRegister_thenUserPropertiesMatch() {
+    public void givenValidUser_whenCreateUser_thenUserPropertiesMatch() {
         // Arrange
         mockValidUserSetup();
 
-        // Act
-        final User registeredUser = userService.register(user);
+        final UserDto registeredUser = userService.createUser(userCreateDto);
 
         // Assert
-        assertEquals(user.getUsername(), registeredUser.getUsername());
-        assertEquals(user.getPassword(), registeredUser.getPassword());
-        assertEquals(user.getEmail(), registeredUser.getEmail());
+        // Verify that UserDto properties match
+        assertEquals(userCreateDto.getUsername(), registeredUser.getUsername());
+        assertEquals(userCreateDto.getEmail(), registeredUser.getEmail());
+
+        // Capture the User entity saved to the repository
+        final ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
+        verify(userRepository).save(userCaptor.capture());
+        User savedUser = userCaptor.getValue();
+
+        // Ensure the password is hashed and not stored in plain text
+        assertNotEquals(userCreateDto.getPassword(), savedUser.getPassword()); // Password should be hashed
+        verify(hashingService).hashPassword(userCreateDto.getPassword());
     }
+
 
     @Test
     public void givenValidUser_whenRegister_thenRepositorySaveIsCalled() {
@@ -77,31 +106,19 @@ public class UserServiceTest {
         mockValidUserSetup();
 
         // Act
-        final User registeredUser = userService.register(user);
+        final UserDto registeredUser = userService.createUser(userCreateDto);
 
         // Assert
         assertNotNull(registeredUser);
-        verify(userRepository, times(1)).save(user); // Verify repository interaction
-    }
 
-    @Test
-    public void givenValidUser_whenRegister_thenPasswordIsHashed() {
-        // Arrange
-        mockValidUserSetup();
-
-        // Act
-        final User registeredUser = userService.register(user);
-
-        // Assert
-        assertNotNull(registeredUser);
-        assertTrue(registeredUser.getPassword().startsWith("hashed_"));
-        assertEquals("hashed_Password123!", registeredUser.getPassword());
+        final ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
+        verify(userRepository, times(1)).save(userCaptor.capture());
     }
 
     @Test
     public void givenNullUser_whenRegister_thenThrowException() {
         // Act and Assert
-        final Exception exception = assertThrows(InvalidUserException.class, () -> userService.register(null));
+        final Exception exception = assertThrows(InvalidUserException.class, () -> userService.createUser(null));
 
         assertEquals("Username is invalid", exception.getMessage());
         verify(userRepository, never()).save(any(User.class)); // Ensure save is not called
@@ -110,10 +127,10 @@ public class UserServiceTest {
     @Test
     public void givenEmptyUsername_whenRegister_thenThrowException() {
         // Arrange
-        user.setUsername("");
+        userCreateDto.setUsername("");
 
         // Act and Assert
-        final Exception exception = assertThrows(InvalidUserException.class, () -> userService.register(user));
+        final Exception exception = assertThrows(InvalidUserException.class, () -> userService.createUser(userCreateDto));
 
         assertEquals("Username is invalid", exception.getMessage());
         verify(userRepository, never()).save(any(User.class));
@@ -122,13 +139,13 @@ public class UserServiceTest {
     @Test
     public void givenInvalidEmail_whenRegister_thenThrowException() {
         // Arrange
-        user.setEmail("invalid-email");
-        when(validationService.isValidUsername(user.getUsername())).thenReturn(true);
-        when(validationService.isValidPassword(user.getPassword())).thenReturn(true);
-        when(validationService.isValidEmail(user.getEmail())).thenReturn(false);
+        userCreateDto.setEmail("invalid-email");
+        when(validationService.isValidUsername(userCreateDto.getUsername())).thenReturn(true);
+        when(validationService.isValidPassword(userCreateDto.getPassword())).thenReturn(true);
+        when(validationService.isValidEmail(userCreateDto.getEmail())).thenReturn(false);
 
         // Act and Assert
-        final Exception exception = assertThrows(InvalidUserException.class, () -> userService.register(user));
+        final Exception exception = assertThrows(InvalidUserException.class, () -> userService.createUser(userCreateDto));
 
         assertEquals("User has invalid email. Email should be in the form (test@example.com).", exception.getMessage());
         verify(userRepository, never()).save(any(User.class));
@@ -140,19 +157,19 @@ public class UserServiceTest {
         mockValidUserSetup();
 
         // Act
-        final User registeredUser = userService.register(user);
+        final UserDto registeredUser = userService.createUser(userCreateDto);
 
         // Assert
         assertNotNull(registeredUser);
-        verify(validationService, times(1)).isValidUsername(user.getUsername());
-        verify(validationService, times(1)).isValidEmail(user.getEmail());
+        verify(validationService, times(1)).isValidUsername(userCreateDto.getUsername());
+        verify(validationService, times(1)).isValidEmail(userCreateDto.getEmail());
     }
 
     @Test
     public void givenExistingUsername_whenFindByUsername_thenReturnUser() {
         // Arrange
         when(userRepository.findByUsername("testuser")).thenReturn(Optional.of(user));
-        when(validationService.isValidUsername(user.getUsername())).thenReturn(true);
+        when(validationService.isValidUsername(userCreateDto.getUsername())).thenReturn(true);
 
         // Act
         final Optional<User> possibleUser = userService.findByUsername("testuser");
@@ -208,11 +225,11 @@ public class UserServiceTest {
     @Test
     public void givenExistingUsername_whenRegister_thenThrowException() {
         // Arrange
-        when(userRepository.findByUsername(user.getUsername())).thenReturn(Optional.of(user));
-        when(validationService.isValidUsername(user.getUsername())).thenReturn(true);
+        when(userRepository.findByUsername(userCreateDto.getUsername())).thenReturn(Optional.of(user));
+        when(validationService.isValidUsername(userCreateDto.getUsername())).thenReturn(true);
 
         // Act and Assert
-        final Exception exception = assertThrows(InvalidUserException.class, () -> userService.register(user));
+        final Exception exception = assertThrows(InvalidUserException.class, () -> userService.createUser(userCreateDto));
 
         assertEquals("Username already taken", exception.getMessage());
         verify(userRepository, never()).save(any(User.class));
@@ -234,34 +251,40 @@ public class UserServiceTest {
     @Test
     public void givenUserWithWeakPassword_whenRegister_thenThrowException() {
         // Arrange
-        user.setPassword("123456"); // Weak password
-        when(validationService.isValidPassword(user.getPassword())).thenReturn(false);
-        when(validationService.isValidUsername(user.getUsername())).thenReturn(true);
+        userCreateDto.setPassword("123456"); // Weak password
+        when(validationService.isValidPassword(userCreateDto.getPassword())).thenReturn(false);
+        when(validationService.isValidUsername(userCreateDto.getUsername())).thenReturn(true);
 
         // Act and Assert
-        final Exception exception = assertThrows(InvalidUserException.class, () -> userService.register(user));
+        final Exception exception = assertThrows(InvalidUserException.class, () -> userService.createUser(userCreateDto));
 
-        assertEquals("User has invalid password. Password should be between 12-64 characters long, should contain 1 uppercase, 1 lowercase, 1 number and 1 special character(!.*_-).", exception.getMessage());
+        assertEquals("User has invalid password. Password should be between 12-255 characters long, should contain 1 uppercase, 1 lowercase, 1 number and 1 special character(!.*_-).", exception.getMessage());
         verify(userRepository, never()).save(any(User.class));
     }
 
     @Test
-    public void givenValidUser_whenRegister_thenRawPasswordIsNotPersisted() {
+    public void givenValidUser_whenCreateUser_thenRawPasswordIsNotPersisted() {
         // Arrange
         mockValidUserSetup();
 
         // Act
-        final User registeredUser = userService.register(user);
+        userService.createUser(userCreateDto);
 
         // Assert
-        assertNotEquals("Password123!", registeredUser.getPassword()); // Ensure raw password is not stored
+        ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
+        verify(userRepository).save(userCaptor.capture());
+        User savedUser = userCaptor.getValue();
+
+        assertNotEquals("Password123!", savedUser.getPassword()); // Ensure raw password is not saved
+        assertEquals("hashed_Password123!", savedUser.getPassword()); // Ensure the expected hash is saved
     }
 
+
     private void mockValidUserSetup() {
-        when(userRepository.save(user)).thenReturn(user);
-        when(hashingService.hashPassword(user.getPassword())).thenReturn("hashed_Password123!");
-        when(validationService.isValidUsername(user.getUsername())).thenReturn(true);
-        when(validationService.isValidPassword(user.getPassword())).thenReturn(true);
-        when(validationService.isValidEmail(user.getEmail())).thenReturn(true);
+        when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(hashingService.hashPassword(userCreateDto.getPassword())).thenReturn("hashed_Password123!");
+        when(validationService.isValidUsername(userCreateDto.getUsername())).thenReturn(true);
+        when(validationService.isValidPassword(userCreateDto.getPassword())).thenReturn(true);
+        when(validationService.isValidEmail(userCreateDto.getEmail())).thenReturn(true);
     }
 }

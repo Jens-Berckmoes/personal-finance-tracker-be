@@ -30,7 +30,6 @@ public class UserControllerTest {
 
     @Test
     public void givenValidUserDto_whenCreateUser_thenReturnsCreatedStatus() throws Exception {
-        // Arrange: Prepare the input and mocked service behavior
         final UserCreateDto inputUser = UserCreateDto
                 .builder()
                 .username("testuser")
@@ -47,13 +46,12 @@ public class UserControllerTest {
 
         when(userService.createUser(any(UserCreateDto.class))).thenReturn(createdUser);
 
-        // Act & Assert: Perform POST request and verify response
         mockMvc.perform(post("/users")
-                        .contentType(MediaType.APPLICATION_JSON) // Set content type to JSON
-                        .content(new ObjectMapper().writeValueAsString(inputUser))) // Serialize DTO to JSON
-                .andExpect(status().isCreated()) // Expect HTTP 201
-                .andExpect(jsonPath("$.username").value("testuser")) // Verify response content
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(new ObjectMapper().writeValueAsString(inputUser)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.username").value("testuser"))
                 .andExpect(jsonPath("$.email").value("test@example.com"))
-                .andExpect(jsonPath("$.password").doesNotExist()); // Password should not be in response
+                .andExpect(jsonPath("$.password").doesNotExist());
     }
 }

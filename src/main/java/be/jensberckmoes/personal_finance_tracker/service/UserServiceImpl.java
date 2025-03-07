@@ -24,25 +24,9 @@ public class UserServiceImpl implements UserService {
     @Autowired
     private ValidationService validationService;
 
-    public User register(final User user) {
-        if(Objects.isNull(user)){
-            throw new InvalidUserException("Username is invalid");
-        }
-        if(findByUsername(user.getUsername()).isPresent()){
-            throw new InvalidUserException("Username already taken");
-        }
-        if(!validationService.isValidPassword(user.getPassword())){
-            throw new InvalidUserException("User has invalid password. Password should be between 12-64 characters long, should contain 1 uppercase, 1 lowercase, 1 number and 1 special character(!.*_-).");
-        }
-        if (!validationService.isValidEmail(user.getEmail())) {
-            throw new InvalidUserException("User has invalid email. Email should be in the form (test@example.com).");
-        }
-        user.setPassword(hashingService.hashPassword(user.getPassword()));
-        return userRepository.save(user);
-    }
 
     @Override
-    public UserDto createUser(UserCreateDto userCreateDto) {
+    public UserDto createUser(final UserCreateDto userCreateDto) {
         if(Objects.isNull(userCreateDto)){
             throw new InvalidUserException("Username is invalid");
         }
@@ -50,7 +34,7 @@ public class UserServiceImpl implements UserService {
             throw new InvalidUserException("Username already taken");
         }
         if(!validationService.isValidPassword(userCreateDto.getPassword())){
-            throw new InvalidUserException("User has invalid password. Password should be between 12-64 characters long, should contain 1 uppercase, 1 lowercase, 1 number and 1 special character(!.*_-).");
+            throw new InvalidUserException("User has invalid password. Password should be between 12-255 characters long, should contain 1 uppercase, 1 lowercase, 1 number and 1 special character(!.*_-).");
         }
         if (!validationService.isValidEmail(userCreateDto.getEmail())) {
             throw new InvalidUserException("User has invalid email. Email should be in the form (test@example.com).");
