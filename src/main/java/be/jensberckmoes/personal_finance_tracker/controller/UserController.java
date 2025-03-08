@@ -6,10 +6,7 @@ import be.jensberckmoes.personal_finance_tracker.service.UserService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/users")
@@ -27,5 +24,11 @@ public class UserController {
         return ResponseEntity
                 .status(HttpStatus.CREATED)
                 .body(createdUser);
+    }
+
+    @GetMapping
+    public ResponseEntity<UserDto> findByUsername(@RequestParam final String username) {
+        final UserDto user = userService.findByUsername(username);
+        return ResponseEntity.ok(user);
     }
 }

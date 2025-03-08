@@ -9,5 +9,5 @@ import java.util.Optional;
 public interface UserService {
     UserDto createUser(final UserCreateDto user);
 
-    Optional<User> findByUsername(final String username);
+    UserDto findByUsername(final String username);
 }

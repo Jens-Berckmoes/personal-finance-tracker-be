@@ -12,6 +12,8 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 import java.util.List;
 import java.util.Optional;
@@ -27,6 +29,8 @@ public class UserRepositoryTest {
     private EntityManager entityManager;
     @Autowired
     private HashingService hashingService;
+    @MockitoBean
+    private SecurityFilterChain mockSecurityFilterChain;
 
     private User user;
 

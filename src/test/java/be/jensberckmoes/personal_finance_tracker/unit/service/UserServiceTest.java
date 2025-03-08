@@ -39,18 +39,27 @@ public class UserServiceTest {
 
     private UserCreateDto userCreateDto;
     private User user;
+    private UserDto userDto;
 
     @BeforeEach
     public void setUp() {
-        userCreateDto = UserCreateDto.builder()
+        userCreateDto = UserCreateDto
+                .builder()
                 .password("Password123!")
                 .username("testuser")
                 .email("test@example.com")
                 .build();
-        user = User.builder()
+        user = User
+                .builder()
                 .password("Password123!")
                 .username("testuser")
                 .email("test@example.com")
+                .build();
+        userDto = UserDto
+                .builder()
+                .username("testuser")
+                .email("test@example.com")
+                .role(Role.USER.toString())
                 .build();
     }
 
@@ -172,34 +181,28 @@ public class UserServiceTest {
         when(validationService.isValidUsername(userCreateDto.getUsername())).thenReturn(true);
 
         // Act
-        final Optional<User> possibleUser = userService.findByUsername("testuser");
+        final UserDto user = userService.findByUsername("testuser");
 
         // Assert
-        assertNotNull(possibleUser);
-        assertTrue(possibleUser.isPresent());
-        final User foundUser = possibleUser.get();
+        assertNotNull(user);
         assertAll(
-                () -> assertEquals("testuser", foundUser.getUsername()),
-                () -> assertEquals("Password123!", foundUser.getPassword()),
-                () -> assertEquals("test@example.com", foundUser.getEmail())
+                () -> assertEquals("testuser", user.getUsername()),
+                () -> assertEquals("test@example.com", user.getEmail()),
+                () -> assertEquals("USER", user.getRole())
         );
         verify(userRepository, times(1)).findByUsername("testuser");
     }
 
 
     @Test
-    public void givenNonExistingUsername_whenFindByUsername_thenReturnEmptyOptional() {
+    public void givenNonExistingUsername_whenFindByUsername_thenThrowException() {
         // Arrange
         when(userRepository.findByUsername("nonexistent")).thenReturn(Optional.empty());
         when(validationService.isValidUsername("nonexistent")).thenReturn(true);
 
-        // Act
-        Optional<User> possibleUser = userService.findByUsername("nonexistent");
+        final Exception exception = assertThrows(InvalidUserException.class, () -> userService.findByUsername("nonexistent"));
 
-        // Assert
-        assertNotNull(possibleUser);
-        assertFalse(possibleUser.isPresent()); // Assert that the Optional is empty
-        verify(userRepository, times(1)).findByUsername("nonexistent");
+        assertTrue(exception.getMessage().contains("Username does not exist"));
     }
 
     @Test
@@ -226,7 +229,6 @@ public class UserServiceTest {
     public void givenExistingUsername_whenRegister_thenThrowException() {
         // Arrange
         when(userRepository.findByUsername(userCreateDto.getUsername())).thenReturn(Optional.of(user));
-        when(validationService.isValidUsername(userCreateDto.getUsername())).thenReturn(true);
 
         // Act and Assert
         final Exception exception = assertThrows(InvalidUserException.class, () -> userService.createUser(userCreateDto));
@@ -241,10 +243,10 @@ public class UserServiceTest {
         when(userRepository.findByUsername("TestUser")).thenReturn(Optional.of(user));
         when(validationService.isValidUsername("testuser")).thenReturn(true);
         // Act
-        final Optional<User> possibleUser = userService.findByUsername("TestUser");
+        final UserDto userDto = userService.findByUsername("TestUser");
 
         // Assert
-        assertTrue(possibleUser.isPresent());
+        assertNotNull(userDto);
         verify(userRepository, times(1)).findByUsername("TestUser");
     }
 

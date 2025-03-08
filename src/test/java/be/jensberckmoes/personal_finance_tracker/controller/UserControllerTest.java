@@ -13,8 +13,9 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -57,4 +58,27 @@ public class UserControllerTest {
                 .andExpect(jsonPath("$.email").value("test@example.com"))
                 .andExpect(jsonPath("$.password").doesNotExist());
     }
+
+    @Test
+    public void shouldReturnUserDetails_whenValidUserIdIsProvided() throws Exception {
+        final UserDto createdUser = UserDto
+                .builder()
+                .username("testuser")
+                .email("test@example.com")
+                .role("USER")
+                .build();
+        when(userService.findByUsername("testuser")).thenReturn(createdUser);
+
+        // Act & Assert: Perform the GET request and validate the response
+        mockMvc.perform(get("/users?username=testuser")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.username").value("testuser"))
+                .andExpect(jsonPath("$.role").value("USER"))
+                .andExpect(jsonPath("$.email").value("test@example.com"));
+
+        verify(userService, times(1)).findByUsername("testuser");
+    }
+
+
 }

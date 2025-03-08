@@ -10,7 +10,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.Objects;
-import java.util.Optional;
+
+import static be.jensberckmoes.personal_finance_tracker.model.UserEntityMapper.mapToDto;
 
 @Service
 public class UserServiceImpl implements UserService {
@@ -27,13 +28,16 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public UserDto createUser(final UserCreateDto userCreateDto) {
-        if(Objects.isNull(userCreateDto)){
+        if (Objects.isNull(userCreateDto)) {
             throw new InvalidUserException("Username is invalid");
         }
-        if(findByUsername(userCreateDto.getUsername()).isPresent()){
+        if (userRepository.findByUsername(userCreateDto.getUsername()).isPresent()) {
             throw new InvalidUserException("Username already taken");
         }
-        if(!validationService.isValidPassword(userCreateDto.getPassword())){
+        if (!validationService.isValidUsername(userCreateDto.getUsername())) {
+            throw new InvalidUserException("Username is invalid");
+        }
+        if (!validationService.isValidPassword(userCreateDto.getPassword())) {
             throw new InvalidUserException("User has invalid password. Password should be between 12-255 characters long, should contain 1 uppercase, 1 lowercase, 1 number and 1 special character(!.*_-).");
         }
         if (!validationService.isValidEmail(userCreateDto.getEmail())) {
@@ -47,23 +51,19 @@ public class UserServiceImpl implements UserService {
                 .build();
         final User savedUser = userRepository.save(user);
 
-        return UserDto.
-                builder()
-                .username(savedUser.getUsername())
-                .role(savedUser.getRole().toString())
-                .email(savedUser.getEmail())
-                .build();
+        return mapToDto(savedUser);
     }
 
-    public Optional<User> findByUsername(final String username) {
-        if(Objects.isNull(username) || username.isBlank()){
+    public UserDto findByUsername(final String username) {
+        if (Objects.isNull(username) || username.isBlank()) {
             throw new InvalidUserException("Username is invalid");
         }
         final String lowerCaseUserName = username.toLowerCase();
         if (!validationService.isValidUsername(lowerCaseUserName)) {
             throw new InvalidUserException("Username is invalid");
         }
-        return userRepository.findByUsername(username);
+        final User foundUser = userRepository.findByUsername(username).orElseThrow(() -> new InvalidUserException("Username does not exist"));
+        return mapToDto(foundUser);
     }
 
 }
