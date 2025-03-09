@@ -10,7 +10,7 @@ import java.util.List;
 public interface UserService {
     UserDto createUser(final UserCreateDto user);
 
-    UserDto getUserById(final Long id);
+    UserDto findUserById(final Long id);
 
     UserDto findByUsername(final String username);
 
@@ -20,7 +20,7 @@ public interface UserService {
 
     List<UserDto> getUsersByUsernameContains(final String keyword);
 
-    UserDto updateUser(final Long id, UserUpdateDto userUpdateDto);
+    UserDto updateUser(final Long id, final UserUpdateDto userUpdateDto);
 
     void deleteUser(final Long id);
 

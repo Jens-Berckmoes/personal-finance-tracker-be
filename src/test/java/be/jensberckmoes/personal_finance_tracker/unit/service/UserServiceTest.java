@@ -9,15 +9,20 @@ import be.jensberckmoes.personal_finance_tracker.repository.UserRepository;
 import be.jensberckmoes.personal_finance_tracker.service.HashingService;
 import be.jensberckmoes.personal_finance_tracker.service.ValidationService;
 import be.jensberckmoes.personal_finance_tracker.service.UserServiceImpl;
+import jakarta.validation.ConstraintViolationException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Optional;
+import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -51,9 +56,11 @@ public class UserServiceTest {
                 .build();
         user = User
                 .builder()
+                .id(1L)
                 .password("Password123!")
                 .username("testuser")
                 .email("test@example.com")
+                .role(Role.ADMIN)
                 .build();
         userDto = UserDto
                 .builder()
@@ -74,9 +81,9 @@ public class UserServiceTest {
         assertEquals("USER", createdUser.getRole());
         assertEquals("test@example.com", createdUser.getEmail());
 
-        ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
+        final ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
+        final User savedUser = userCaptor.getValue();
         verify(userRepository).save(userCaptor.capture());
-        User savedUser = userCaptor.getValue();
 
         assertEquals("testuser", savedUser.getUsername());
         assertEquals("hashed_Password123!", savedUser.getPassword());
@@ -101,7 +108,7 @@ public class UserServiceTest {
         // Capture the User entity saved to the repository
         final ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
         verify(userRepository).save(userCaptor.capture());
-        User savedUser = userCaptor.getValue();
+        final User savedUser = userCaptor.getValue();
 
         // Ensure the password is hashed and not stored in plain text
         assertNotEquals(userCreateDto.getPassword(), savedUser.getPassword()); // Password should be hashed
@@ -266,21 +273,58 @@ public class UserServiceTest {
 
     @Test
     public void givenValidUser_whenCreateUser_thenRawPasswordIsNotPersisted() {
-        // Arrange
         mockValidUserSetup();
 
-        // Act
         userService.createUser(userCreateDto);
 
-        // Assert
-        ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
+        final ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
         verify(userRepository).save(userCaptor.capture());
-        User savedUser = userCaptor.getValue();
+        final User savedUser = userCaptor.getValue();
 
         assertNotEquals("Password123!", savedUser.getPassword()); // Ensure raw password is not saved
         assertEquals("hashed_Password123!", savedUser.getPassword()); // Ensure the expected hash is saved
     }
 
+    @Test
+    public void givenValidUser_whenFindById_thenUserIsReturned() {
+        when(userRepository.findById(1L)).thenReturn(Optional.ofNullable(user));
+
+        final UserDto returnedUserDto = userService.findUserById(1L);
+
+        assertNotNull(returnedUserDto);
+        assertAll(
+                () -> assertEquals("testuser", returnedUserDto.getUsername()),
+                () -> assertEquals("test@example.com", returnedUserDto.getEmail()),
+                () -> assertEquals("ADMIN", returnedUserDto.getRole())
+        );
+
+        verify(userRepository, times(1)).findById(1L);
+    }
+
+    @Test
+    public void givenInvalidUser_whenFindById_thenThrowException() {
+        final InvalidUserException exception = assertThrows(InvalidUserException.class,
+                () -> userService.findUserById(99L));
+
+        assertTrue(exception.getMessage().contains("Username does not exist"));
+    }
+
+    @ParameterizedTest
+    @MethodSource("providedFindByIdValidations")
+    public void givenInvalidParameterValues_whenFindById_thenThrowException(final Long idValue,
+                                                                            final String expectedMessage) {
+        final InvalidUserException exception = assertThrows(InvalidUserException.class,
+                () -> userService.findUserById(idValue));
+
+        assertTrue(exception.getMessage().contains(expectedMessage));
+    }
+
+    private static Stream<Arguments> providedFindByIdValidations() {
+        return Stream.of(
+                Arguments.of(null, "Username is invalid"),  // null value
+                Arguments.of(-1L, "Username is invalid")    // negative value
+        );
+    }
 
     private void mockValidUserSetup() {
         when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
