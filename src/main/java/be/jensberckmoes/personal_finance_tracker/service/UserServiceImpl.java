@@ -2,6 +2,7 @@ package be.jensberckmoes.personal_finance_tracker.service;
 
 import be.jensberckmoes.personal_finance_tracker.dto.UserCreateDto;
 import be.jensberckmoes.personal_finance_tracker.dto.UserDto;
+import be.jensberckmoes.personal_finance_tracker.dto.UserUpdateDto;
 import be.jensberckmoes.personal_finance_tracker.exception.InvalidUserException;
 import be.jensberckmoes.personal_finance_tracker.model.Role;
 import be.jensberckmoes.personal_finance_tracker.model.User;
@@ -9,6 +10,7 @@ import be.jensberckmoes.personal_finance_tracker.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.Objects;
 
 import static be.jensberckmoes.personal_finance_tracker.model.UserEntityMapper.mapToDto;
@@ -54,6 +56,16 @@ public class UserServiceImpl implements UserService {
         return mapToDto(savedUser);
     }
 
+    @Override
+    public UserDto getUserById(final Long id) {
+        /*if (Objects.isNull(id) || id < 0) {
+            throw new InvalidUserException("Username is invalid");
+        }
+        final User foundUser = userRepository.findById(id).orElseThrow(() -> new InvalidUserException("Username does not exist"));
+        return mapToDto(foundUser);*/
+        return null;
+    }
+
     public UserDto findByUsername(final String username) {
         if (Objects.isNull(username) || username.isBlank()) {
             throw new InvalidUserException("Username is invalid");
@@ -64,6 +76,46 @@ public class UserServiceImpl implements UserService {
         }
         final User foundUser = userRepository.findByUsername(username).orElseThrow(() -> new InvalidUserException("Username does not exist"));
         return mapToDto(foundUser);
+    }
+
+    @Override
+    public List<UserDto> getAllUsers() {
+        return List.of();
+    }
+
+    @Override
+    public List<UserDto> getUsersByRole(Role role) {
+        return List.of();
+    }
+
+    @Override
+    public List<UserDto> getUsersByUsernameContains(String keyword) {
+        return List.of();
+    }
+
+    @Override
+    public UserDto updateUser(Long id, UserUpdateDto userUpdateDto) {
+        return null;
+    }
+
+    @Override
+    public void deleteUser(Long id) {
+
+    }
+
+    @Override
+    public boolean usernameExists(String username) {
+        return false;
+    }
+
+    @Override
+    public boolean emailExists(String email) {
+        return false;
+    }
+
+    @Override
+    public boolean hasRole(Long userId, Role role) {
+        return false;
     }
 
 }
