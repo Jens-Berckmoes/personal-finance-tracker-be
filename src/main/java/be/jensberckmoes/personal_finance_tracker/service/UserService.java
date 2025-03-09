@@ -10,7 +10,7 @@ import java.util.List;
 public interface UserService {
     UserDto createUser(final UserCreateDto user);
 
-    UserDto findUserById(final Long id);
+    UserDto getUserById(final Long id);
 
     UserDto findByUsername(final String username);
 

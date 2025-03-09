@@ -9,7 +9,6 @@ import be.jensberckmoes.personal_finance_tracker.repository.UserRepository;
 import be.jensberckmoes.personal_finance_tracker.service.HashingService;
 import be.jensberckmoes.personal_finance_tracker.service.ValidationService;
 import be.jensberckmoes.personal_finance_tracker.service.UserServiceImpl;
-import jakarta.validation.ConstraintViolationException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -21,6 +20,9 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
 
@@ -44,7 +46,6 @@ public class UserServiceTest {
 
     private UserCreateDto userCreateDto;
     private User user;
-    private UserDto userDto;
 
     @BeforeEach
     public void setUp() {
@@ -61,12 +62,6 @@ public class UserServiceTest {
                 .username("testuser")
                 .email("test@example.com")
                 .role(Role.ADMIN)
-                .build();
-        userDto = UserDto
-                .builder()
-                .username("testuser")
-                .email("test@example.com")
-                .role(Role.USER.toString())
                 .build();
     }
 
@@ -289,7 +284,7 @@ public class UserServiceTest {
     public void givenValidUser_whenFindById_thenUserIsReturned() {
         when(userRepository.findById(1L)).thenReturn(Optional.of(user));
 
-        final UserDto userDto = userService.findUserById(1L);
+        final UserDto userDto = userService.getUserById(1L);
 
         assertNotNull(userDto);
         assertAll(
@@ -304,7 +299,7 @@ public class UserServiceTest {
     @Test
     public void givenInvalidUser_whenFindById_thenThrowException() {
         final InvalidUserException exception = assertThrows(InvalidUserException.class,
-                () -> userService.findUserById(99L));
+                () -> userService.getUserById(99L));
 
         assertTrue(exception.getMessage().contains("Username does not exist"));
         verify(userRepository, times(1)).findById(99L);
@@ -315,10 +310,99 @@ public class UserServiceTest {
     public void givenInvalidParameterValues_whenFindById_thenThrowException(final Long idValue,
                                                                             final String expectedMessage) {
         final InvalidUserException exception = assertThrows(InvalidUserException.class,
-                () -> userService.findUserById(idValue));
+                () -> userService.getUserById(idValue));
 
         assertTrue(exception.getMessage().contains(expectedMessage));
     }
+
+    @Test
+    public void whenGetAllUsersIsCalled_thenReturnAllUsers() {
+        final User adminuser = User
+                .builder()
+                .id(1L)
+                .password("Ab1!" + "A".repeat(12))
+                .username("adminuser")
+                .email("adminuser@example.com")
+                .role(Role.ADMIN)
+                .build();
+        final User testuser = User
+                .builder()
+                .id(1L)
+                .password("Ab1!" + "B".repeat(12))
+                .username("testuser")
+                .email("testuser@example.com")
+                .role(Role.USER)
+                .build();
+        when(userRepository.findAll()).thenReturn(List.of(adminuser, testuser));
+
+        final List<UserDto> userDtoList = userService.getAllUsers();
+        assertNotNull(userDtoList);
+        assertFalse(userDtoList.isEmpty());
+        assertEquals(2, userDtoList.size());
+        assertAll(
+                () -> assertEquals("adminuser", userDtoList.getFirst().getUsername()),
+                () -> assertEquals("testuser", userDtoList.get(1).getUsername())
+        );
+    }
+
+    @Test
+    public void givenNoUsersExist_whenGetAll_thenReturnsEmptyList() {
+        // Arrange
+        when(userRepository.findAll()).thenReturn(Collections.emptyList());
+
+        // Act
+        final List<UserDto> result = userService.getAllUsers();
+
+        // Assert
+        assertNotNull(result);
+        assertTrue(result.isEmpty());
+    }
+
+    @Test
+    public void givenLargeNumberOfUsers_whenGetAll_thenReturnsAllUsers() {
+        // Arrange
+        final List<User> largeUserList = new ArrayList<>();
+        for (int i = 1; i <= 1000; i++) {
+            largeUserList.add(User
+                    .builder()
+                    .id((long) i)
+                    .username("user" + i)
+                    .password("Ab1!" + "A".repeat(12))
+                    .email("user" + i + "@example.com")
+                    .role(Role.USER)
+                    .build());
+        }
+        when(userRepository.findAll()).thenReturn(largeUserList);
+
+        final List<UserDto> result = userService.getAllUsers();
+
+        assertNotNull(result);
+        assertEquals(1000, result.size());
+        assertEquals("user1", result.getFirst().getUsername());
+        assertEquals("user1000", result.get(999).getUsername());
+    }
+
+    @Test
+    public void givenUsersExist_whenGetAll_thenMapsFieldsCorrectly() {
+        // Arrange
+        final User user = User
+                .builder()
+                .id(1L)
+                .password("Ab1!" + "A".repeat(12))
+                .username("adminuser")
+                .email("adminuser@example.com")
+                .role(Role.ADMIN)
+                .build();
+        when(userRepository.findAll()).thenReturn(List.of(user));
+
+        final List<UserDto> result = userService.getAllUsers();
+
+        final UserDto userDto = result.getFirst();
+        assertEquals("adminuser", userDto.getUsername());
+        assertEquals("adminuser@example.com", userDto.getEmail());
+        assertEquals("ADMIN", userDto.getRole());
+    }
+
 
     private static Stream<Arguments> providedFindByIdValidations() {
         return Stream.of(

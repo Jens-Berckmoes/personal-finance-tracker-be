@@ -6,6 +6,7 @@ import be.jensberckmoes.personal_finance_tracker.dto.UserUpdateDto;
 import be.jensberckmoes.personal_finance_tracker.exception.InvalidUserException;
 import be.jensberckmoes.personal_finance_tracker.model.Role;
 import be.jensberckmoes.personal_finance_tracker.model.User;
+import be.jensberckmoes.personal_finance_tracker.model.UserEntityMapper;
 import be.jensberckmoes.personal_finance_tracker.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -57,7 +58,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public UserDto findUserById(final Long id) {
+    public UserDto getUserById(final Long id) {
         if (Objects.isNull(id) || id <= 0) {
             throw new InvalidUserException("User ID is invalid");
         }
@@ -79,41 +80,44 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public List<UserDto> getAllUsers() {
+        final List<User> users = userRepository.findAll();
+        return users.stream().map(UserEntityMapper::mapToDto).toList();
+    }
+
+    @Override
+    public List<UserDto> getUsersByRole(final Role role) {
         return List.of();
     }
 
     @Override
-    public List<UserDto> getUsersByRole(Role role) {
+    public List<UserDto> getUsersByUsernameContains(final String keyword) {
         return List.of();
     }
 
     @Override
-    public List<UserDto> getUsersByUsernameContains(String keyword) {
-        return List.of();
-    }
-
-    @Override
-    public UserDto updateUser(Long id, UserUpdateDto userUpdateDto) {
+    public UserDto updateUser(final Long id,
+                              final UserUpdateDto userUpdateDto) {
         return null;
     }
 
     @Override
-    public void deleteUser(Long id) {
+    public void deleteUser(final Long id) {
 
     }
 
     @Override
-    public boolean usernameExists(String username) {
+    public boolean usernameExists(final String username) {
         return false;
     }
 
     @Override
-    public boolean emailExists(String email) {
+    public boolean emailExists(final String email) {
         return false;
     }
 
     @Override
-    public boolean hasRole(Long userId, Role role) {
+    public boolean hasRole(final Long userId,
+                           final Role role) {
         return false;
     }
 
