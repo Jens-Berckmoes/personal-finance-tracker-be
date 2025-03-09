@@ -58,8 +58,8 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public UserDto findUserById(final Long id) {
-        if (Objects.isNull(id) || id < 0) {
-            throw new InvalidUserException("Username is invalid");
+        if (Objects.isNull(id) || id <= 0) {
+            throw new InvalidUserException("User ID is invalid");
         }
         final User foundUser = userRepository.findById(id).orElseThrow(() -> new InvalidUserException("Username does not exist"));
         return mapToDto(foundUser);

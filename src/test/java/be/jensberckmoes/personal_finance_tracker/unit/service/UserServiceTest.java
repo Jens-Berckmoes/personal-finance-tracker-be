@@ -82,8 +82,8 @@ public class UserServiceTest {
         assertEquals("test@example.com", createdUser.getEmail());
 
         final ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
-        final User savedUser = userCaptor.getValue();
         verify(userRepository).save(userCaptor.capture());
+        final User savedUser = userCaptor.getValue();
 
         assertEquals("testuser", savedUser.getUsername());
         assertEquals("hashed_Password123!", savedUser.getPassword());
@@ -195,7 +195,7 @@ public class UserServiceTest {
         assertAll(
                 () -> assertEquals("testuser", user.getUsername()),
                 () -> assertEquals("test@example.com", user.getEmail()),
-                () -> assertEquals("USER", user.getRole())
+                () -> assertEquals("ADMIN", user.getRole())
         );
         verify(userRepository, times(1)).findByUsername("testuser");
     }
@@ -287,15 +287,15 @@ public class UserServiceTest {
 
     @Test
     public void givenValidUser_whenFindById_thenUserIsReturned() {
-        when(userRepository.findById(1L)).thenReturn(Optional.ofNullable(user));
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
 
-        final UserDto returnedUserDto = userService.findUserById(1L);
+        final UserDto userDto = userService.findUserById(1L);
 
-        assertNotNull(returnedUserDto);
+        assertNotNull(userDto);
         assertAll(
-                () -> assertEquals("testuser", returnedUserDto.getUsername()),
-                () -> assertEquals("test@example.com", returnedUserDto.getEmail()),
-                () -> assertEquals("ADMIN", returnedUserDto.getRole())
+                () -> assertEquals("testuser", userDto.getUsername()),
+                () -> assertEquals("test@example.com", userDto.getEmail()),
+                () -> assertEquals("ADMIN", userDto.getRole())
         );
 
         verify(userRepository, times(1)).findById(1L);
@@ -307,6 +307,7 @@ public class UserServiceTest {
                 () -> userService.findUserById(99L));
 
         assertTrue(exception.getMessage().contains("Username does not exist"));
+        verify(userRepository, times(1)).findById(99L);
     }
 
     @ParameterizedTest
@@ -321,8 +322,9 @@ public class UserServiceTest {
 
     private static Stream<Arguments> providedFindByIdValidations() {
         return Stream.of(
-                Arguments.of(null, "Username is invalid"),  // null value
-                Arguments.of(-1L, "Username is invalid")    // negative value
+                Arguments.of(null, "User ID is invalid"),  // Null value
+                Arguments.of(-1L, "User ID is invalid"),   // Negative value
+                Arguments.of(0L, "User ID is invalid")     // Boundary value
         );
     }
 
