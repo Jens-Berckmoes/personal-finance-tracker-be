@@ -1,5 +1,6 @@
-package be.jensberckmoes.personal_finance_tracker.controller;
+package be.jensberckmoes.personal_finance_tracker.unit.controller;
 
+import be.jensberckmoes.personal_finance_tracker.controller.UserController;
 import be.jensberckmoes.personal_finance_tracker.dto.UserCreateDto;
 import be.jensberckmoes.personal_finance_tracker.dto.UserDto;
 import be.jensberckmoes.personal_finance_tracker.model.Role;

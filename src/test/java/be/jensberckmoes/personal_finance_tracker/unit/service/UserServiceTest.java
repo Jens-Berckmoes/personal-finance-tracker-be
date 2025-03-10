@@ -2,6 +2,7 @@ package be.jensberckmoes.personal_finance_tracker.unit.service;
 
 import be.jensberckmoes.personal_finance_tracker.dto.UserCreateDto;
 import be.jensberckmoes.personal_finance_tracker.dto.UserDto;
+import be.jensberckmoes.personal_finance_tracker.exception.InvalidRoleException;
 import be.jensberckmoes.personal_finance_tracker.exception.InvalidUserException;
 import be.jensberckmoes.personal_finance_tracker.model.Role;
 import be.jensberckmoes.personal_finance_tracker.model.User;
@@ -24,6 +25,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -344,6 +346,76 @@ public class UserServiceTest {
                 () -> assertEquals("testuser", userDtoList.get(1).getUsername())
         );
     }
+    @Test
+    public void givenUsersExistWithRole_whenFindByRole_thenReturnsUserList() {
+        final Role adminRole = Role.ADMIN;
+        final Role userRole = Role.USER;
+        final User adminuser = User
+                .builder()
+                .id(1L)
+                .password("Ab1!" + "A".repeat(12))
+                .username("adminuser")
+                .email("adminuser@example.com")
+                .role(adminRole)
+                .build();
+        final User testuser = User
+                .builder()
+                .id(2L)
+                .password("Ab1!" + "B".repeat(12))
+                .username("testuser")
+                .email("testuser@example.com")
+                .role(userRole)
+                .build();
+        final User testuser1 = User
+                .builder()
+                .id(3L)
+                .password("Ab1!" + "C".repeat(12))
+                .username("testuser1")
+                .email("testuser1@example.com")
+                .role(userRole)
+                .build();
+        when(userRepository.findByRole(adminRole)).thenReturn(List.of(adminuser));
+        when(userRepository.findByRole(userRole)).thenReturn(List.of(testuser, testuser1));
+
+        final List<UserDto> adminDtoList = userService.getUsersByRole(adminRole);
+        final List<UserDto> userDtoList = userService.getUsersByRole(userRole);
+        assertNotNull(userDtoList);
+        assertNotNull(adminDtoList);
+        assertFalse(adminDtoList.isEmpty());
+        assertFalse(userDtoList.isEmpty());
+        assertEquals(1, adminDtoList.size());
+        assertEquals(2, userDtoList.size());
+        assertAll(
+                () -> assertEquals("adminuser", adminDtoList.getFirst().getUsername()),
+                () -> assertEquals("ADMIN", adminDtoList.getFirst().getRole()),
+                () -> assertEquals("testuser", userDtoList.getFirst().getUsername()),
+                () -> assertEquals("USER", userDtoList.getFirst().getRole()),
+                () -> assertEquals("testuser1", userDtoList.get(1).getUsername()),
+                () -> assertEquals("USER", userDtoList.get(1).getRole())
+        );
+    }
+
+    @Test
+    public void givenNoUsersExistWithRole_whenFindByRole_thenReturnsEmptyList() {
+        // Arrange
+        final Role role = Role.ADMIN;
+        when(userRepository.findByRole(role)).thenReturn(Collections.emptyList());
+
+        // Act
+        final List<UserDto> result = userService.getUsersByRole(role);
+
+        // Assert
+        assertNotNull(result);
+        assertTrue(result.isEmpty());
+    }
+
+    @Test
+    public void givenNullRole_whenFindByRole_thenThrowException() {
+        final InvalidRoleException exception = assertThrows(InvalidRoleException.class,
+                () -> userService.getUsersByRole(null));
+
+        assertTrue(exception.getMessage().contains("Role cannot be null"));
+    }
 
     @Test
     public void givenNoUsersExist_whenGetAll_thenReturnsEmptyList() {
@@ -402,7 +474,37 @@ public class UserServiceTest {
         assertEquals("adminuser@example.com", userDto.getEmail());
         assertEquals("ADMIN", userDto.getRole());
     }
+    @Test
+    public void givenLargeDataset_whenFindByRole_thenReturnsAllUsers() {
+        // Arrange
+        final Role role = Role.USER;
+        final List<User> users = IntStream
+                .rangeClosed(1,1000)
+                .mapToObj(i -> new User((long) i, "user" + i, "email" + i + "@example.com", "Password123!", role))
+                .toList();
 
+        when(userRepository.findByRole(role)).thenReturn(users);
+
+        // Act
+        final List<UserDto> result = userService.getUsersByRole(role);
+
+        // Assert
+        assertNotNull(result);
+        assertEquals(1000, result.size());
+    }
+
+    @Test
+    public void whenFindByRole_thenVerifyRepositoryInteraction() {
+        // Arrange
+        Role role = Role.USER;
+        when(userRepository.findByRole(role)).thenReturn(Collections.emptyList());
+
+        // Act
+        userService.getUsersByRole(role);
+
+        // Assert
+        verify(userRepository, times(1)).findByRole(role);
+    }
 
     private static Stream<Arguments> providedFindByIdValidations() {
         return Stream.of(

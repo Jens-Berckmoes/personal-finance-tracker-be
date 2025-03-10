@@ -3,6 +3,7 @@ package be.jensberckmoes.personal_finance_tracker.service;
 import be.jensberckmoes.personal_finance_tracker.dto.UserCreateDto;
 import be.jensberckmoes.personal_finance_tracker.dto.UserDto;
 import be.jensberckmoes.personal_finance_tracker.dto.UserUpdateDto;
+import be.jensberckmoes.personal_finance_tracker.exception.InvalidRoleException;
 import be.jensberckmoes.personal_finance_tracker.exception.InvalidUserException;
 import be.jensberckmoes.personal_finance_tracker.model.Role;
 import be.jensberckmoes.personal_finance_tracker.model.User;
@@ -27,7 +28,6 @@ public class UserServiceImpl implements UserService {
 
     @Autowired
     private ValidationService validationService;
-
 
     @Override
     public UserDto createUser(final UserCreateDto userCreateDto) {
@@ -86,7 +86,9 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public List<UserDto> getUsersByRole(final Role role) {
-        return List.of();
+        if(Objects.isNull(role)) throw new InvalidRoleException("Role cannot be null");
+        final List<User> users = userRepository.findByRole(role);
+        return users.stream().map(UserEntityMapper::mapToDto).toList();
     }
 
     @Override

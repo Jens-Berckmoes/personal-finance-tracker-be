@@ -1,7 +1,8 @@
-package be.jensberckmoes.personal_finance_tracker.repository;
+package be.jensberckmoes.personal_finance_tracker.integration.repository;
 
 import be.jensberckmoes.personal_finance_tracker.model.Role;
 import be.jensberckmoes.personal_finance_tracker.model.User;
+import be.jensberckmoes.personal_finance_tracker.repository.UserRepository;
 import be.jensberckmoes.personal_finance_tracker.service.HashingService;
 import jakarta.persistence.EntityManager;
 import jakarta.validation.ConstraintViolationException;
@@ -233,8 +234,8 @@ public class UserRepositoryTest {
                 .build();
         userRepository.save(user3);
 
-        final List<User> admins = userRepository.findAllByRole(Role.ADMIN);
-        final List<User> users = userRepository.findAllByRole(Role.USER);
+        final List<User> admins = userRepository.findByRole(Role.ADMIN);
+        final List<User> users = userRepository.findByRole(Role.USER);
         assertNotNull(admins);
         assertEquals(2, admins.size());
         assertEquals(1, users.size());
