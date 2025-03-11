@@ -8,5 +8,6 @@ import lombok.Data;
 @AllArgsConstructor
 @Builder
 public class UserUpdateDto {
-
+    private String username;
+    private String email;
 }

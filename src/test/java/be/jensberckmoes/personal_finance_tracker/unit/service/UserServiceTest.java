@@ -2,10 +2,11 @@ package be.jensberckmoes.personal_finance_tracker.unit.service;
 
 import be.jensberckmoes.personal_finance_tracker.dto.UserCreateDto;
 import be.jensberckmoes.personal_finance_tracker.dto.UserDto;
-import be.jensberckmoes.personal_finance_tracker.exception.InvalidRoleException;
-import be.jensberckmoes.personal_finance_tracker.exception.InvalidUserException;
+import be.jensberckmoes.personal_finance_tracker.dto.UserUpdateDto;
+import be.jensberckmoes.personal_finance_tracker.exception.*;
 import be.jensberckmoes.personal_finance_tracker.model.Role;
 import be.jensberckmoes.personal_finance_tracker.model.User;
+import be.jensberckmoes.personal_finance_tracker.model.UserEntityMapper;
 import be.jensberckmoes.personal_finance_tracker.repository.UserRepository;
 import be.jensberckmoes.personal_finance_tracker.service.HashingService;
 import be.jensberckmoes.personal_finance_tracker.service.UserServiceImpl;
@@ -19,6 +20,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -45,6 +47,9 @@ public class UserServiceTest {
 
     @Mock
     private ValidationService validationService;
+
+    @Spy
+    private UserEntityMapper userEntityMapper;
 
     @InjectMocks
     private UserServiceImpl userService;
@@ -125,9 +130,9 @@ public class UserServiceTest {
 
     @Test
     public void givenNullUser_whenRegister_thenThrowException() {
-        final Exception exception = assertThrows(InvalidUserException.class, () -> userService.createUser(null));
+        final Exception exception = assertThrows(NullParameterException.class, () -> userService.createUser(null));
 
-        assertEquals("Username is invalid", exception.getMessage());
+        assertEquals("Parameter 'userUpdateDto' cannot be null", exception.getMessage());
         verify(userRepository, never()).save(any(User.class)); // Ensure save is not called
     }
 
@@ -148,7 +153,7 @@ public class UserServiceTest {
         when(validationService.isValidPassword(userCreateDto.getPassword())).thenReturn(true);
         when(validationService.isValidEmail(userCreateDto.getEmail())).thenReturn(false);
 
-        final Exception exception = assertThrows(InvalidUserException.class, () -> userService.createUser(userCreateDto));
+        final Exception exception = assertThrows(InvalidEmailException.class, () -> userService.createUser(userCreateDto));
 
         assertEquals("User has invalid email. Email should be in the form (test@example.com).", exception.getMessage());
         verify(userRepository, never()).save(any(User.class));
@@ -194,27 +199,27 @@ public class UserServiceTest {
 
     @Test
     public void givenNullUsername_whenFindByUsername_thenThrowException() {
-        final Exception exception = assertThrows(InvalidUserException.class, () -> userService.findByUsername(null));
+        final Exception exception = assertThrows(NullParameterException.class, () -> userService.findByUsername(null));
 
-        assertTrue(exception.getMessage().contains("invalid"), "Message should indicate invalid input.");
+        assertTrue(exception.getMessage().contains("Parameter 'username' cannot be null"), "Message should indicate invalid input.");
         verify(userRepository, never()).findByUsername(anyString());
     }
 
 
     @Test
     public void givenEmptyUsername_whenFindByUsername_thenThrowException() {
-        final Exception exception = assertThrows(InvalidUserException.class, () -> userService.findByUsername(""));
+        final Exception exception = assertThrows(BlankParameterException.class, () -> userService.findByUsername(""));
 
-        assertTrue(exception.getMessage().contains("invalid"), "Message should indicate invalid input.");
+        assertTrue(exception.getMessage().contains("Parameter 'username' cannot be blank"), "Message should indicate invalid input.");
         verify(userRepository, never()).findByUsername(anyString());
     }
 
 
     @Test
     public void givenExistingUsername_whenRegister_thenThrowException() {
-        when(userRepository.findByUsername(userCreateDto.getUsername())).thenReturn(Optional.of(user));
+        when(userRepository.existsByUsername(userCreateDto.getUsername())).thenReturn(true);
 
-        final Exception exception = assertThrows(InvalidUserException.class, () -> userService.createUser(userCreateDto));
+        final Exception exception = assertThrows(DuplicateUsernameException.class, () -> userService.createUser(userCreateDto));
 
         assertEquals("Username already taken", exception.getMessage());
         verify(userRepository, never()).save(any(User.class));
@@ -237,7 +242,7 @@ public class UserServiceTest {
         when(validationService.isValidPassword(userCreateDto.getPassword())).thenReturn(false);
         when(validationService.isValidUsername(userCreateDto.getUsername())).thenReturn(true);
 
-        final Exception exception = assertThrows(InvalidUserException.class, () -> userService.createUser(userCreateDto));
+        final Exception exception = assertThrows(InvalidPasswordException.class, () -> userService.createUser(userCreateDto));
 
         assertEquals("User has invalid password. Password should be between 12-255 characters long, should contain 1 uppercase, 1 lowercase, 1 number and 1 special character(!.*_-).", exception.getMessage());
         verify(userRepository, never()).save(any(User.class));
@@ -286,7 +291,7 @@ public class UserServiceTest {
     @MethodSource("providedFindByIdValidations")
     public void givenInvalidParameterValues_whenFindById_thenThrowException(final Long idValue,
                                                                             final String expectedMessage) {
-        final InvalidUserException exception = assertThrows(InvalidUserException.class,
+        final InvalidUserIDException exception = assertThrows(InvalidUserIDException.class,
                 () -> userService.getUserById(idValue));
 
         assertTrue(exception.getMessage().contains(expectedMessage));
@@ -504,6 +509,22 @@ public class UserServiceTest {
         assertEquals("user2", result.getContent().get(1).getUsername());
     }
 
+    @Test
+    public void givenValidIdAndUserUpdateDto_whenUpdateUser_thenReturnUpdatedUserDto() {
+        final Long id = 1L;
+        final UserUpdateDto userUpdateDto = new UserUpdateDto("updatedUsername", "updated@example.com");
+        final User existingUser = createTestUser(id, "oldUsername", "Password123!", "old@example.com", Role.USER);
+
+        when(userRepository.findById(id)).thenReturn(Optional.of(existingUser));
+        when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(validationService.isValidEmail(userUpdateDto.getEmail())).thenReturn(true);
+
+        final UserDto result = userService.updateUser(id, userUpdateDto);
+
+        assertNotNull(result);
+        assertEquals("updatedUsername", result.getUsername());
+        assertEquals("updated@example.com", result.getEmail());
+    }
 
     private static Stream<Arguments> providedFindByIdValidations() {
         return Stream.of(
