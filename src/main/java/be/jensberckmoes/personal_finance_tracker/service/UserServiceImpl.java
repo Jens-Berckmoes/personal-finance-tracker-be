@@ -64,7 +64,7 @@ public class UserServiceImpl implements UserService {
     @Override
     public UserDto getUserById(final Long id) {
         if (Objects.isNull(id) || id <= 0) {
-            throw new InvalidUserIDException("User ID is invalid");
+            throw new InvalidUserIDException("ID must be a positive number");
         }
         final User foundUser = userRepository.findById(id).orElseThrow(() -> new InvalidUserException("Username does not exist"));
         return userEntityMapper.mapToDto(foundUser);
@@ -94,7 +94,7 @@ public class UserServiceImpl implements UserService {
     @Override
     public List<UserDto> getUsersByRole(final Role role) {
         if (Objects.isNull(role)){
-            throw new InvalidRoleException("Role cannot be null");
+            throw new NullParameterException("Role cannot be null");
         }
         final List<User> users = userRepository.findByRole(role);
         return users.stream().map(i -> userEntityMapper.mapToDto(i)).toList();
@@ -134,8 +134,8 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public void deleteUser(final Long id) {
-        if(Objects.isNull(id)){
-            throw new NullParameterException("Parameter 'id' cannot be null");
+        if (Objects.isNull(id) || id <= 0) {
+            throw new InvalidUserIDException("ID must be a positive number");
         }
         userRepository.deleteById(id);
     }
@@ -163,9 +163,14 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public boolean hasRole(final Long userId,
-                           final Role role) {
-        return false;
+    public boolean hasRole(final Long userId, final Role role) {
+        if (Objects.isNull(userId) || userId <= 0) {
+            throw new InvalidUserIDException("ID must be a positive number");
+        }
+        if (Objects.isNull(role)) {
+            throw new NullParameterException("Role cannot be null");
+        }
+        return userRepository.findByIdAndRole(userId, role);
     }
 
     private <T> void updateFieldIfNotNull(final Consumer<T> setter, final T value) {

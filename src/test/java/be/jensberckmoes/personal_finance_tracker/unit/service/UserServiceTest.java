@@ -355,7 +355,7 @@ public class UserServiceTest {
 
     @Test
     public void givenNullRole_whenFindByRole_thenThrowException() {
-        final InvalidRoleException exception = assertThrows(InvalidRoleException.class,
+        final NullParameterException exception = assertThrows(NullParameterException.class,
                 () -> userService.getUsersByRole(null));
 
         assertTrue(exception.getMessage().contains("Role cannot be null"));
@@ -623,7 +623,7 @@ public class UserServiceTest {
 
     @Test
     public void givenNullId_whenDeleteUser_thenThrowNullParameterException() {
-        assertThrows(NullParameterException.class, () -> userService.deleteUser(null));
+        assertThrows(InvalidUserIDException.class, () -> userService.deleteUser(null));
         verify(userRepository, never()).deleteById(any());
     }
 
@@ -729,11 +729,69 @@ public class UserServiceTest {
         verify(userRepository, times(1)).existsByEmail(email);
     }
 
+    @Test
+    public void givenValidUserIdAndRole_whenHasRole_thenReturnTrue() {
+        final Long userId = 1L;
+        final Role role = Role.ADMIN;
+        when(userRepository.findByIdAndRole(userId, role)).thenReturn(true);
+
+        final boolean result = userService.hasRole(userId, role);
+
+        assertTrue(result);
+        verify(userRepository, times(1)).findByIdAndRole(userId, role);
+    }
+
+    @Test
+    public void givenUserIdAndRoleNotMatching_whenHasRole_thenReturnFalse() {
+        final Long userId = 1L;
+        final Role role = Role.USER;
+        when(userRepository.findByIdAndRole(userId, role)).thenReturn(false);
+
+        final boolean result = userService.hasRole(userId, role);
+
+        assertFalse(result);
+        verify(userRepository, times(1)).findByIdAndRole(userId, role);
+    }
+
+    @Test
+    public void givenNullUserId_whenHasRole_thenThrowNullParameterException() {
+        final Role role = Role.ADMIN;
+
+        assertThrows(InvalidUserIDException.class, () -> userService.hasRole(null, role));
+        verify(userRepository, never()).findByIdAndRole(any(), any());
+    }
+
+    @Test
+    public void givenNegativeUserId_whenHasRole_thenThrowInvalidUserIDException() {
+        final Long userId = -1L;
+        final Role role = Role.ADMIN;
+
+        assertThrows(InvalidUserIDException.class, () -> userService.hasRole(userId, role));
+        verify(userRepository, never()).findByIdAndRole(any(), any());
+    }
+
+    @Test
+    public void givenZeroUserId_whenHasRole_thenThrowInvalidUserIDException() {
+        final Long userId = 0L;
+        final Role role = Role.ADMIN;
+
+        assertThrows(InvalidUserIDException.class, () -> userService.hasRole(userId, role));
+        verify(userRepository, never()).findByIdAndRole(any(), any());
+    }
+
+    @Test
+    public void givenNullRole_whenHasRole_thenThrowNullParameterException() {
+        final Long userId = 1L;
+
+        assertThrows(NullParameterException.class, () -> userService.hasRole(userId, null));
+        verify(userRepository, never()).findByIdAndRole(any(), any());
+    }
+
     private static Stream<Arguments> providedFindByIdValidations() {
         return Stream.of(
-                Arguments.of(null, "User ID is invalid"),  // Null value
-                Arguments.of(-1L, "User ID is invalid"),   // Negative value
-                Arguments.of(0L, "User ID is invalid")     // Boundary value
+                Arguments.of(null, "ID must be a positive number"),  // Null value
+                Arguments.of(-1L, "ID must be a positive number"),   // Negative value
+                Arguments.of(0L, "ID must be a positive number")     // Boundary value
         );
     }
 
