@@ -142,12 +142,24 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public boolean usernameExists(final String username) {
-        return false;
+        if(Objects.isNull(username)){
+            throw new NullParameterException("Parameter 'id' cannot be null");
+        }
+        if(username.isBlank()){
+            throw new BlankParameterException("Parameter 'username' cannot be blank");
+        }
+        return userRepository.existsByUsername(username);
     }
 
     @Override
     public boolean emailExists(final String email) {
-        return false;
+        if(Objects.isNull(email)){
+            throw new NullParameterException("Parameter 'id' cannot be null");
+        }
+        if(email.isBlank()){
+            throw new BlankParameterException("Parameter 'username' cannot be blank");
+        }
+        return userRepository.existsByEmail(email);
     }
 
     @Override

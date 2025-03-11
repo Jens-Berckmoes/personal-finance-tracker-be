@@ -637,6 +637,98 @@ public class UserServiceTest {
         verify(userRepository, times(1)).deleteById(id);
     }
 
+    @Test
+    public void givenExistingUsername_whenUsernameExists_thenReturnTrue() {
+        final String existingUsername = "testuser";
+        when(userRepository.existsByUsername(existingUsername)).thenReturn(true);
+
+        final boolean result = userService.usernameExists(existingUsername);
+
+        assertTrue(result);
+        verify(userRepository, times(1)).existsByUsername(existingUsername);
+    }
+
+    @Test
+    public void givenNonExistingUsername_whenUsernameExists_thenReturnFalse() {
+        final String nonExistingUsername = "nonexistentuser";
+        when(userRepository.existsByUsername(nonExistingUsername)).thenReturn(false);
+
+        // Act
+        final boolean result = userService.usernameExists(nonExistingUsername);
+
+        // Assert
+        assertFalse(result);
+        verify(userRepository, times(1)).existsByUsername(nonExistingUsername);
+    }
+
+    @Test
+    public void givenNullUsername_whenUsernameExists_thenThrowNullParameterException() {
+        assertThrows(NullParameterException.class, () -> userService.usernameExists(null));
+        verify(userRepository, never()).existsByUsername(any());
+    }
+
+    @Test
+    public void givenBlankUsername_whenUsernameExists_thenThrowBlankParameterException() {
+        assertThrows(BlankParameterException.class, () -> userService.usernameExists("   "));
+        verify(userRepository, never()).existsByUsername(any());
+    }
+
+    @Test
+    public void givenUsernameInDifferentCase_whenUsernameExists_thenReturnCorrectResult() {
+        final String username = "TestUser";
+        when(userRepository.existsByUsername("TestUser")).thenReturn(true);
+
+        final boolean result = userService.usernameExists(username);
+
+        assertTrue(result);
+        verify(userRepository, times(1)).existsByUsername(username);
+    }
+
+    @Test
+    public void givenExistingEmail_whenEmailExists_thenReturnTrue() {
+        final String existingEmail = "test@example.com";
+        when(userRepository.existsByEmail(existingEmail)).thenReturn(true);
+
+        final boolean result = userService.emailExists(existingEmail);
+
+        assertTrue(result);
+        verify(userRepository, times(1)).existsByEmail(existingEmail);
+    }
+
+    @Test
+    public void givenNonExistingEmail_whenEmailExists_thenReturnFalse() {
+        final String nonExistingEmail = "nonexistent@example.com";
+        when(userRepository.existsByEmail(nonExistingEmail)).thenReturn(false);
+
+        final boolean result = userService.emailExists(nonExistingEmail);
+
+        assertFalse(result);
+        verify(userRepository, times(1)).existsByEmail(nonExistingEmail);
+    }
+
+    @Test
+    public void givenNullEmail_whenEmailExists_thenThrowNullParameterException() {
+        assertThrows(NullParameterException.class, () -> userService.emailExists(null));
+        verify(userRepository, never()).existsByEmail(any());
+    }
+
+    @Test
+    public void givenBlankEmail_whenEmailExists_thenThrowBlankParameterException() {
+        assertThrows(BlankParameterException.class, () -> userService.emailExists("   "));
+        verify(userRepository, never()).existsByEmail(any());
+    }
+
+    @Test
+    public void givenEmailInDifferentCase_whenEmailExists_thenReturnCorrectResult() {
+        final String email = "Test@Example.com";
+        when(userRepository.existsByEmail("Test@Example.com")).thenReturn(true);
+
+        final boolean result = userService.emailExists(email);
+
+        assertTrue(result);
+        verify(userRepository, times(1)).existsByEmail(email);
+    }
+
     private static Stream<Arguments> providedFindByIdValidations() {
         return Stream.of(
                 Arguments.of(null, "User ID is invalid"),  // Null value
