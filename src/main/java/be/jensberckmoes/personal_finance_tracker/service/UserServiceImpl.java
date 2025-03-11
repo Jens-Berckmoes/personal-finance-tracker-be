@@ -10,6 +10,8 @@ import be.jensberckmoes.personal_finance_tracker.model.User;
 import be.jensberckmoes.personal_finance_tracker.model.UserEntityMapper;
 import be.jensberckmoes.personal_finance_tracker.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -92,9 +94,11 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public List<UserDto> getUsersByUsernameContains(final String keyword) {
-        return List.of();
+    public Page<UserDto> getUsersByUsernameContains(final String substring, final Pageable pageable) {
+        Page<User> usersPage = userRepository.findByUsernameContaining(substring, pageable);
+        return usersPage.map(UserEntityMapper::mapToDto);
     }
+
 
     @Override
     public UserDto updateUser(final Long id,

@@ -8,8 +8,8 @@ import be.jensberckmoes.personal_finance_tracker.model.Role;
 import be.jensberckmoes.personal_finance_tracker.model.User;
 import be.jensberckmoes.personal_finance_tracker.repository.UserRepository;
 import be.jensberckmoes.personal_finance_tracker.service.HashingService;
-import be.jensberckmoes.personal_finance_tracker.service.ValidationService;
 import be.jensberckmoes.personal_finance_tracker.service.UserServiceImpl;
+import be.jensberckmoes.personal_finance_tracker.service.ValidationService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -20,8 +20,11 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -53,25 +56,25 @@ public class UserServiceTest {
     public void setUp() {
         userCreateDto = UserCreateDto
                 .builder()
-                .password("Password123!")
                 .username("testuser")
+                .password("Password123!")
                 .email("test@example.com")
                 .build();
         user = User
                 .builder()
                 .id(1L)
-                .password("Password123!")
                 .username("testuser")
+                .password("Password123!")
                 .email("test@example.com")
                 .role(Role.ADMIN)
                 .build();
+        user = createTestUser(1L, "testuser", "Password123!", "test@example.com", Role.ADMIN);
     }
 
     @Test
     public void givenValidUserCreateDto_whenCreateUser_thenUserIsPersisted() {
-        // Arrange
         mockValidUserSetup();
-        // Act
+
         final UserDto createdUser = userService.createUser(userCreateDto);
 
         assertEquals("testuser", createdUser.getUsername());
@@ -92,36 +95,28 @@ public class UserServiceTest {
 
     @Test
     public void givenValidUser_whenCreateUser_thenUserPropertiesMatch() {
-        // Arrange
         mockValidUserSetup();
 
         final UserDto registeredUser = userService.createUser(userCreateDto);
 
-        // Assert
-        // Verify that UserDto properties match
         assertEquals(userCreateDto.getUsername(), registeredUser.getUsername());
         assertEquals(userCreateDto.getEmail(), registeredUser.getEmail());
 
-        // Capture the User entity saved to the repository
         final ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
         verify(userRepository).save(userCaptor.capture());
         final User savedUser = userCaptor.getValue();
 
-        // Ensure the password is hashed and not stored in plain text
-        assertNotEquals(userCreateDto.getPassword(), savedUser.getPassword()); // Password should be hashed
+        assertNotEquals(userCreateDto.getPassword(), savedUser.getPassword());
         verify(hashingService).hashPassword(userCreateDto.getPassword());
     }
 
 
     @Test
     public void givenValidUser_whenRegister_thenRepositorySaveIsCalled() {
-        // Arrange
         mockValidUserSetup();
 
-        // Act
         final UserDto registeredUser = userService.createUser(userCreateDto);
 
-        // Assert
         assertNotNull(registeredUser);
 
         final ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
@@ -130,7 +125,6 @@ public class UserServiceTest {
 
     @Test
     public void givenNullUser_whenRegister_thenThrowException() {
-        // Act and Assert
         final Exception exception = assertThrows(InvalidUserException.class, () -> userService.createUser(null));
 
         assertEquals("Username is invalid", exception.getMessage());
@@ -139,10 +133,8 @@ public class UserServiceTest {
 
     @Test
     public void givenEmptyUsername_whenRegister_thenThrowException() {
-        // Arrange
         userCreateDto.setUsername("");
 
-        // Act and Assert
         final Exception exception = assertThrows(InvalidUserException.class, () -> userService.createUser(userCreateDto));
 
         assertEquals("Username is invalid", exception.getMessage());
@@ -151,13 +143,11 @@ public class UserServiceTest {
 
     @Test
     public void givenInvalidEmail_whenRegister_thenThrowException() {
-        // Arrange
         userCreateDto.setEmail("invalid-email");
         when(validationService.isValidUsername(userCreateDto.getUsername())).thenReturn(true);
         when(validationService.isValidPassword(userCreateDto.getPassword())).thenReturn(true);
         when(validationService.isValidEmail(userCreateDto.getEmail())).thenReturn(false);
 
-        // Act and Assert
         final Exception exception = assertThrows(InvalidUserException.class, () -> userService.createUser(userCreateDto));
 
         assertEquals("User has invalid email. Email should be in the form (test@example.com).", exception.getMessage());
@@ -166,13 +156,10 @@ public class UserServiceTest {
 
     @Test
     public void givenValidUser_whenRegister_thenValidationServiceMethodsAreCalled() {
-        // Arrange
         mockValidUserSetup();
 
-        // Act
         final UserDto registeredUser = userService.createUser(userCreateDto);
 
-        // Assert
         assertNotNull(registeredUser);
         verify(validationService, times(1)).isValidUsername(userCreateDto.getUsername());
         verify(validationService, times(1)).isValidEmail(userCreateDto.getEmail());
@@ -180,14 +167,11 @@ public class UserServiceTest {
 
     @Test
     public void givenExistingUsername_whenFindByUsername_thenReturnUser() {
-        // Arrange
         when(userRepository.findByUsername("testuser")).thenReturn(Optional.of(user));
         when(validationService.isValidUsername(userCreateDto.getUsername())).thenReturn(true);
 
-        // Act
         final UserDto user = userService.findByUsername("testuser");
 
-        // Assert
         assertNotNull(user);
         assertAll(
                 () -> assertEquals("testuser", user.getUsername()),
@@ -200,7 +184,6 @@ public class UserServiceTest {
 
     @Test
     public void givenNonExistingUsername_whenFindByUsername_thenThrowException() {
-        // Arrange
         when(userRepository.findByUsername("nonexistent")).thenReturn(Optional.empty());
         when(validationService.isValidUsername("nonexistent")).thenReturn(true);
 
@@ -211,7 +194,6 @@ public class UserServiceTest {
 
     @Test
     public void givenNullUsername_whenFindByUsername_thenThrowException() {
-        // Act and Assert
         final Exception exception = assertThrows(InvalidUserException.class, () -> userService.findByUsername(null));
 
         assertTrue(exception.getMessage().contains("invalid"), "Message should indicate invalid input.");
@@ -221,7 +203,6 @@ public class UserServiceTest {
 
     @Test
     public void givenEmptyUsername_whenFindByUsername_thenThrowException() {
-        // Act and Assert
         final Exception exception = assertThrows(InvalidUserException.class, () -> userService.findByUsername(""));
 
         assertTrue(exception.getMessage().contains("invalid"), "Message should indicate invalid input.");
@@ -231,10 +212,8 @@ public class UserServiceTest {
 
     @Test
     public void givenExistingUsername_whenRegister_thenThrowException() {
-        // Arrange
         when(userRepository.findByUsername(userCreateDto.getUsername())).thenReturn(Optional.of(user));
 
-        // Act and Assert
         final Exception exception = assertThrows(InvalidUserException.class, () -> userService.createUser(userCreateDto));
 
         assertEquals("Username already taken", exception.getMessage());
@@ -243,25 +222,21 @@ public class UserServiceTest {
 
     @Test
     public void givenUsernameInDifferentCase_whenFindByUsername_thenReturnFoundUser() {
-        // Arrange
         when(userRepository.findByUsername("TestUser")).thenReturn(Optional.of(user));
         when(validationService.isValidUsername("testuser")).thenReturn(true);
-        // Act
+
         final UserDto userDto = userService.findByUsername("TestUser");
 
-        // Assert
         assertNotNull(userDto);
         verify(userRepository, times(1)).findByUsername("TestUser");
     }
 
     @Test
     public void givenUserWithWeakPassword_whenRegister_thenThrowException() {
-        // Arrange
-        userCreateDto.setPassword("123456"); // Weak password
+        userCreateDto.setPassword("123456");
         when(validationService.isValidPassword(userCreateDto.getPassword())).thenReturn(false);
         when(validationService.isValidUsername(userCreateDto.getUsername())).thenReturn(true);
 
-        // Act and Assert
         final Exception exception = assertThrows(InvalidUserException.class, () -> userService.createUser(userCreateDto));
 
         assertEquals("User has invalid password. Password should be between 12-255 characters long, should contain 1 uppercase, 1 lowercase, 1 number and 1 special character(!.*_-).", exception.getMessage());
@@ -319,23 +294,9 @@ public class UserServiceTest {
 
     @Test
     public void whenGetAllUsersIsCalled_thenReturnAllUsers() {
-        final User adminuser = User
-                .builder()
-                .id(1L)
-                .password("Ab1!" + "A".repeat(12))
-                .username("adminuser")
-                .email("adminuser@example.com")
-                .role(Role.ADMIN)
-                .build();
-        final User testuser = User
-                .builder()
-                .id(1L)
-                .password("Ab1!" + "B".repeat(12))
-                .username("testuser")
-                .email("testuser@example.com")
-                .role(Role.USER)
-                .build();
-        when(userRepository.findAll()).thenReturn(List.of(adminuser, testuser));
+        final User adminUser = createTestUser(1L, "adminuser", "Ab1!" + "A".repeat(12), "adminuser@example.com", Role.ADMIN);
+        final User testUser = createTestUser(2L, "testuser", "Ab1!" + "B".repeat(12), "testuser@example.com", Role.USER);
+        when(userRepository.findAll()).thenReturn(List.of(adminUser, testUser));
 
         final List<UserDto> userDtoList = userService.getAllUsers();
         assertNotNull(userDtoList);
@@ -346,36 +307,17 @@ public class UserServiceTest {
                 () -> assertEquals("testuser", userDtoList.get(1).getUsername())
         );
     }
+
     @Test
     public void givenUsersExistWithRole_whenFindByRole_thenReturnsUserList() {
         final Role adminRole = Role.ADMIN;
         final Role userRole = Role.USER;
-        final User adminuser = User
-                .builder()
-                .id(1L)
-                .password("Ab1!" + "A".repeat(12))
-                .username("adminuser")
-                .email("adminuser@example.com")
-                .role(adminRole)
-                .build();
-        final User testuser = User
-                .builder()
-                .id(2L)
-                .password("Ab1!" + "B".repeat(12))
-                .username("testuser")
-                .email("testuser@example.com")
-                .role(userRole)
-                .build();
-        final User testuser1 = User
-                .builder()
-                .id(3L)
-                .password("Ab1!" + "C".repeat(12))
-                .username("testuser1")
-                .email("testuser1@example.com")
-                .role(userRole)
-                .build();
-        when(userRepository.findByRole(adminRole)).thenReturn(List.of(adminuser));
-        when(userRepository.findByRole(userRole)).thenReturn(List.of(testuser, testuser1));
+        final User adminUser = createTestUser(1L, "adminuser", "Ab1!" + "A".repeat(12), "adminuser@example.com", Role.ADMIN);
+        final User testUser = createTestUser(2L, "testuser", "Ab1!" + "B".repeat(12), "testuser@example.com", Role.USER);
+        final User testUser1 = createTestUser(3L, "testuser1", "Ab1!" + "C".repeat(12), "testuser1@example.com", Role.USER);
+
+        when(userRepository.findByRole(adminRole)).thenReturn(List.of(adminUser));
+        when(userRepository.findByRole(userRole)).thenReturn(List.of(testUser, testUser1));
 
         final List<UserDto> adminDtoList = userService.getUsersByRole(adminRole);
         final List<UserDto> userDtoList = userService.getUsersByRole(userRole);
@@ -397,14 +339,11 @@ public class UserServiceTest {
 
     @Test
     public void givenNoUsersExistWithRole_whenFindByRole_thenReturnsEmptyList() {
-        // Arrange
         final Role role = Role.ADMIN;
         when(userRepository.findByRole(role)).thenReturn(Collections.emptyList());
 
-        // Act
         final List<UserDto> result = userService.getUsersByRole(role);
 
-        // Assert
         assertNotNull(result);
         assertTrue(result.isEmpty());
     }
@@ -419,31 +358,21 @@ public class UserServiceTest {
 
     @Test
     public void givenNoUsersExist_whenGetAll_thenReturnsEmptyList() {
-        // Arrange
         when(userRepository.findAll()).thenReturn(Collections.emptyList());
 
-        // Act
         final List<UserDto> result = userService.getAllUsers();
 
-        // Assert
         assertNotNull(result);
         assertTrue(result.isEmpty());
     }
 
     @Test
     public void givenLargeNumberOfUsers_whenGetAll_thenReturnsAllUsers() {
-        // Arrange
-        final List<User> largeUserList = new ArrayList<>();
-        for (int i = 1; i <= 1000; i++) {
-            largeUserList.add(User
-                    .builder()
-                    .id((long) i)
-                    .username("user" + i)
-                    .password("Ab1!" + "A".repeat(12))
-                    .email("user" + i + "@example.com")
-                    .role(Role.USER)
-                    .build());
-        }
+        final List<User> largeUserList = IntStream
+                .rangeClosed(1, 1000)
+                .mapToObj(i -> new User((long) i, "user" + i, "email" + i + "@example.com", "Password123!", Role.USER))
+                .toList();
+
         when(userRepository.findAll()).thenReturn(largeUserList);
 
         final List<UserDto> result = userService.getAllUsers();
@@ -456,16 +385,8 @@ public class UserServiceTest {
 
     @Test
     public void givenUsersExist_whenGetAll_thenMapsFieldsCorrectly() {
-        // Arrange
-        final User user = User
-                .builder()
-                .id(1L)
-                .password("Ab1!" + "A".repeat(12))
-                .username("adminuser")
-                .email("adminuser@example.com")
-                .role(Role.ADMIN)
-                .build();
-        when(userRepository.findAll()).thenReturn(List.of(user));
+        final User adminUser = createTestUser(1L, "adminuser", "Ab1!" + "A".repeat(12), "adminuser@example.com", Role.ADMIN);
+        when(userRepository.findAll()).thenReturn(List.of(adminUser));
 
         final List<UserDto> result = userService.getAllUsers();
 
@@ -474,37 +395,115 @@ public class UserServiceTest {
         assertEquals("adminuser@example.com", userDto.getEmail());
         assertEquals("ADMIN", userDto.getRole());
     }
+
     @Test
     public void givenLargeDataset_whenFindByRole_thenReturnsAllUsers() {
-        // Arrange
         final Role role = Role.USER;
         final List<User> users = IntStream
-                .rangeClosed(1,1000)
+                .rangeClosed(1, 1000)
                 .mapToObj(i -> new User((long) i, "user" + i, "email" + i + "@example.com", "Password123!", role))
                 .toList();
 
         when(userRepository.findByRole(role)).thenReturn(users);
 
-        // Act
         final List<UserDto> result = userService.getUsersByRole(role);
 
-        // Assert
         assertNotNull(result);
         assertEquals(1000, result.size());
     }
 
     @Test
     public void whenFindByRole_thenVerifyRepositoryInteraction() {
-        // Arrange
-        Role role = Role.USER;
+        final Role role = Role.USER;
         when(userRepository.findByRole(role)).thenReturn(Collections.emptyList());
 
-        // Act
         userService.getUsersByRole(role);
 
-        // Assert
         verify(userRepository, times(1)).findByRole(role);
     }
+
+    @Test
+    public void givenMatchingSubstring_whenGetUsersByUsernameContains_thenReturnsUserList() {
+        final String substring = "test";
+        final Pageable pageable = PageRequest.of(0,2);
+        final List<User> users = List.of(
+                createTestUser(1L, "testuser1", "Password123!", "email1@example.com", Role.USER),
+                createTestUser(2L, "anothertestuser", "Password123!", "email2@example.com", Role.USER)
+        );
+        final Page<User> userPage = new PageImpl<>(users, pageable, 5);
+        when(userRepository.findByUsernameContaining(substring, pageable)).thenReturn(userPage);
+
+        final Page<UserDto> result = userService.getUsersByUsernameContains(substring, pageable);
+
+        assertNotNull(result);
+        assertEquals(2, result.getContent().size());
+        assertEquals(5, result.getTotalElements());
+        assertEquals(3, result.getTotalPages());
+        assertEquals("testuser1", result.getContent().getFirst().getUsername());
+        assertEquals("anothertestuser", result.getContent().get(1).getUsername());
+    }
+
+    @Test
+    public void givenNoMatchingSubstring_whenGetUsersByUsernameContains_thenReturnsEmptyPage() {
+        final String substring = "nomatch";
+        final Pageable pageable = PageRequest.of(0, 2);
+        final Page<User> emptyPage = new PageImpl<>(Collections.emptyList(), pageable, 0);
+        when(userRepository.findByUsernameContaining(substring, pageable)).thenReturn(emptyPage);
+
+        final Page<UserDto> result = userService.getUsersByUsernameContains(substring, pageable);
+
+        assertNotNull(result);
+        assertTrue(result.getContent().isEmpty());
+        assertEquals(0, result.getTotalElements());
+        assertEquals(0, result.getTotalPages());
+    }
+
+    @Test
+    public void givenCaseInsensitiveMatch_whenGetUsersByUsernameContains_thenReturnsUsers() {
+        final String substring = "Test";
+        final Pageable pageable = PageRequest.of(0, 2);
+        final List<User> users = List.of(
+                createTestUser(1L, "testuser1", "Password123!", "email1@example.com", Role.USER),
+                createTestUser(2L, "TestUser2", "Password123!", "email1@example.com", Role.USER)
+        );
+        final Page<User> userPage = new PageImpl<>(users, pageable, 5);
+        when(userRepository.findByUsernameContaining(substring,pageable)).thenReturn(userPage);
+
+        final Page<UserDto> result = userService.getUsersByUsernameContains(substring,pageable);
+
+        assertNotNull(result);
+        assertEquals(2, result.getContent().size());
+        assertEquals(5, result.getTotalElements());
+        assertEquals(3, result.getTotalPages());
+        assertEquals("testuser1", result.getContent().getFirst().getUsername());
+        assertEquals("TestUser2", result.getContent().get(1).getUsername());
+    }
+
+    @Test
+    public void givenEmptySubstring_whenFindByUsernameContainsWithPagination_thenReturnsAllUsersPaginated() {
+        // Arrange
+        final String substring = "";
+        final Pageable pageable = PageRequest.of(0, 2); // Page 0, 2 results per page
+        final List<User> users = List.of(
+                createTestUser(1L, "user1", "Password123!", "email1@example.com", Role.USER),
+                createTestUser(2L, "user2", "Password123!", "email2@example.com", Role.USER)
+        );
+        final Page<User> userPage = new PageImpl<>(users, pageable, 5);
+
+        when(userRepository.findByUsernameContaining(substring, pageable)).thenReturn(userPage);
+
+        // Act
+        final Page<UserDto> result = userService.getUsersByUsernameContains(substring, pageable);
+
+        // Assert
+        assertNotNull(result);
+        assertEquals(2, result.getContent().size());
+        assertEquals(5, result.getTotalElements());
+        assertEquals(3, result.getTotalPages());
+        assertEquals("user1", result.getContent().getFirst().getUsername());
+        assertEquals("user2", result.getContent().get(1).getUsername());
+    }
+
 
     private static Stream<Arguments> providedFindByIdValidations() {
         return Stream.of(
@@ -512,6 +511,10 @@ public class UserServiceTest {
                 Arguments.of(-1L, "User ID is invalid"),   // Negative value
                 Arguments.of(0L, "User ID is invalid")     // Boundary value
         );
+    }
+
+    private static User createTestUser(final Long id, final String username, final String password, final String email, final Role role) {
+        return User.builder().id(id).username(username).password(password).email(email).role(role).build();
     }
 
     private void mockValidUserSetup() {

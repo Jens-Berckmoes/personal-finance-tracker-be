@@ -4,6 +4,8 @@ import be.jensberckmoes.personal_finance_tracker.dto.UserCreateDto;
 import be.jensberckmoes.personal_finance_tracker.dto.UserDto;
 import be.jensberckmoes.personal_finance_tracker.dto.UserUpdateDto;
 import be.jensberckmoes.personal_finance_tracker.model.Role;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 import java.util.List;
 
@@ -18,7 +20,7 @@ public interface UserService {
 
     List<UserDto> getUsersByRole(final Role role);
 
-    List<UserDto> getUsersByUsernameContains(final String keyword);
+    Page<UserDto> getUsersByUsernameContains(final String substring, final Pageable pageable);
 
     UserDto updateUser(final Long id, final UserUpdateDto userUpdateDto);
 
