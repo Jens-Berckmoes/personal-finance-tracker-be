@@ -430,7 +430,7 @@ public class UserServiceTest {
     @Test
     public void givenMatchingSubstring_whenGetUsersByUsernameContains_thenReturnsUserList() {
         final String substring = "test";
-        final Pageable pageable = PageRequest.of(0,2);
+        final Pageable pageable = PageRequest.of(0, 2);
         final List<User> users = List.of(
                 createTestUser(1L, "testuser1", "Password123!", "email1@example.com", Role.USER),
                 createTestUser(2L, "anothertestuser", "Password123!", "email2@example.com", Role.USER)
@@ -472,9 +472,9 @@ public class UserServiceTest {
                 createTestUser(2L, "TestUser2", "Password123!", "email1@example.com", Role.USER)
         );
         final Page<User> userPage = new PageImpl<>(users, pageable, 5);
-        when(userRepository.findByUsernameContaining(substring,pageable)).thenReturn(userPage);
+        when(userRepository.findByUsernameContaining(substring, pageable)).thenReturn(userPage);
 
-        final Page<UserDto> result = userService.getUsersByUsernameContains(substring,pageable);
+        final Page<UserDto> result = userService.getUsersByUsernameContains(substring, pageable);
 
         assertNotNull(result);
         assertEquals(2, result.getContent().size());
@@ -510,6 +510,23 @@ public class UserServiceTest {
     }
 
     @Test
+    public void givenNullId_whenUpdateDto_thenThrowException() {
+        final UserUpdateDto userUpdateDto = new UserUpdateDto("updatedUsername", "updated@example.com");
+        final Exception exception = assertThrows(NullParameterException.class, () -> userService.updateUser(null, userUpdateDto));
+
+        assertEquals("Parameters 'id' and 'userUpdateDto' cannot be null", exception.getMessage());
+        verify(userRepository, never()).save(any(User.class)); // Ensure save is not called
+    }
+
+    @Test
+    public void givenNullUserUpdateDto_whenUpdateDto_thenThrowException() {
+        final Exception exception = assertThrows(NullParameterException.class, () -> userService.updateUser(1L, null));
+
+        assertEquals("Parameters 'id' and 'userUpdateDto' cannot be null", exception.getMessage());
+        verify(userRepository, never()).save(any(User.class)); // Ensure save is not called
+    }
+
+    @Test
     public void givenValidIdAndUserUpdateDto_whenUpdateUser_thenReturnUpdatedUserDto() {
         final Long id = 1L;
         final UserUpdateDto userUpdateDto = new UserUpdateDto("updatedUsername", "updated@example.com");
@@ -525,6 +542,75 @@ public class UserServiceTest {
         assertEquals("updatedUsername", result.getUsername());
         assertEquals("updated@example.com", result.getEmail());
     }
+
+    @Test
+    public void givenNonExistingId_whenUpdateUser_thenThrowUserNotFoundException() {
+        final Long id = 1L;
+        final UserUpdateDto userUpdateDto = new UserUpdateDto("updatedUsername", "updated@example.com");
+        when(validationService.isValidEmail(userUpdateDto.getEmail())).thenReturn(true);
+        when(userRepository.findById(id)).thenReturn(Optional.empty());
+
+        assertThrows(UserNotFoundException.class, () -> userService.updateUser(id, userUpdateDto));
+        verify(userRepository, never()).save(any(User.class));
+    }
+
+    @Test
+    public void givenInvalidUserUpdateDto_whenUpdateUser_thenThrowValidationException() {
+        final Long id = 1L;
+        final UserUpdateDto userUpdateDto = new UserUpdateDto(null, "invalid-email");
+
+        assertThrows(InvalidEmailException.class, () -> userService.updateUser(id, userUpdateDto));
+        verify(userRepository, never()).save(any(User.class));
+    }
+
+    @Test
+    public void givenPartialUserUpdateDto_whenUpdateUser_thenOnlyUpdateNonNullFields() {
+        final Long id = 1L;
+        final UserUpdateDto userUpdateDto = new UserUpdateDto(null, "updated@example.com");
+        final User existingUser = createTestUser(id, "oldUsername", "Password123!", "old@example.com", Role.USER);
+
+        when(userRepository.findById(id)).thenReturn(Optional.of(existingUser));
+        when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(validationService.isValidEmail(userUpdateDto.getEmail())).thenReturn(true);
+
+        final UserDto result = userService.updateUser(id, userUpdateDto);
+
+        assertNotNull(result);
+        assertEquals("oldUsername", result.getUsername()); // Username not updated
+        assertEquals("updated@example.com", result.getEmail()); // Email updated
+    }
+
+    @Test
+    public void whenUpdateUser_thenVerifyRepositoryInteractions() {
+        // Arrange
+        final Long id = 1L;
+        final UserUpdateDto userUpdateDto = new UserUpdateDto("updatedUsername", "updated@example.com");
+        final User existingUser = createTestUser(id, "oldUsername", "Password123!", "old@example.com", Role.USER);
+
+        when(userRepository.findById(id)).thenReturn(Optional.of(existingUser));
+        when(validationService.isValidEmail(userUpdateDto.getEmail())).thenReturn(true);
+        when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        userService.updateUser(id, userUpdateDto);
+
+        verify(userRepository, times(1)).findById(id);
+        verify(userRepository, times(1)).save(any(User.class));
+    }
+
+    @Test
+    public void givenEmailAlreadyExists_whenUpdateUser_thenThrowDuplicateEmailException() {
+        // Arrange
+        final Long id = 1L;
+        final UserUpdateDto userUpdateDto = new UserUpdateDto("updatedUsername", "existing@example.com");
+
+        when(userRepository.existsByEmail("existing@example.com")).thenReturn(true);
+        when(validationService.isValidEmail("existing@example.com")).thenReturn(true);
+
+        // Act & Assert
+        assertThrows(DuplicateEmailException.class, () -> userService.updateUser(id, userUpdateDto));
+        verify(userRepository, never()).save(any(User.class));
+    }
+
 
     private static Stream<Arguments> providedFindByIdValidations() {
         return Stream.of(

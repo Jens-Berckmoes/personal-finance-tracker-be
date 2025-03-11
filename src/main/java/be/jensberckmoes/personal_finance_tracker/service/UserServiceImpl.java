@@ -111,7 +111,7 @@ public class UserServiceImpl implements UserService {
             throw new NullParameterException("Parameters 'id' and 'userUpdateDto' cannot be null");
         }
         if (!validationService.isValidEmail(userUpdateDto.getEmail())) {
-            throw new ValidationException("Invalid email format");
+            throw new InvalidEmailException("Invalid email format");
         }
         if (userRepository.existsByEmail(userUpdateDto.getEmail())) {
             throw new DuplicateEmailException("Email already in use");
