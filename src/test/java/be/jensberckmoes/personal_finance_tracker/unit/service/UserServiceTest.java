@@ -611,6 +611,31 @@ public class UserServiceTest {
         verify(userRepository, never()).save(any(User.class));
     }
 
+    @Test
+    public void givenValidId_whenDeleteUser_thenUserIsDeleted() {
+        final Long id = 1L;
+        doNothing().when(userRepository).deleteById(id);
+
+        userService.deleteUser(id);
+
+        verify(userRepository, times(1)).deleteById(id);
+    }
+
+    @Test
+    public void givenNullId_whenDeleteUser_thenThrowNullParameterException() {
+        assertThrows(NullParameterException.class, () -> userService.deleteUser(null));
+        verify(userRepository, never()).deleteById(any());
+    }
+
+    @Test
+    public void givenNonExistentId_whenDeleteUser_thenDoNothing() {
+        final Long id = 99L;
+        doNothing().when(userRepository).deleteById(id);
+
+        userService.deleteUser(id);
+
+        verify(userRepository, times(1)).deleteById(id);
+    }
 
     private static Stream<Arguments> providedFindByIdValidations() {
         return Stream.of(

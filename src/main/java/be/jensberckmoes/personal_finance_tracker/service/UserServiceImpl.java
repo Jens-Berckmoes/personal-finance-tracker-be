@@ -93,14 +93,19 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public List<UserDto> getUsersByRole(final Role role) {
-        if (Objects.isNull(role)) throw new InvalidRoleException("Role cannot be null");
+        if (Objects.isNull(role)){
+            throw new InvalidRoleException("Role cannot be null");
+        }
         final List<User> users = userRepository.findByRole(role);
         return users.stream().map(i -> userEntityMapper.mapToDto(i)).toList();
     }
 
     @Override
     public Page<UserDto> getUsersByUsernameContains(final String substring, final Pageable pageable) {
-        Page<User> usersPage = userRepository.findByUsernameContaining(substring, pageable);
+        if (Objects.isNull(substring)) {
+            throw new NullParameterException("Parameter 'username' cannot be null");
+        }
+        final Page<User> usersPage = userRepository.findByUsernameContaining(substring, pageable);
         return usersPage.map(i -> userEntityMapper.mapToDto(i));
     }
 
@@ -129,7 +134,10 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public void deleteUser(final Long id) {
-
+        if(Objects.isNull(id)){
+            throw new NullParameterException("Parameter 'id' cannot be null");
+        }
+        userRepository.deleteById(id);
     }
 
     @Override
