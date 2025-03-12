@@ -3,6 +3,8 @@ package be.jensberckmoes.personal_finance_tracker.unit.controller;
 import be.jensberckmoes.personal_finance_tracker.controller.UserController;
 import be.jensberckmoes.personal_finance_tracker.dto.UserCreateDto;
 import be.jensberckmoes.personal_finance_tracker.dto.UserDto;
+import be.jensberckmoes.personal_finance_tracker.exception.DuplicateEmailException;
+import be.jensberckmoes.personal_finance_tracker.exception.DuplicateUsernameException;
 import be.jensberckmoes.personal_finance_tracker.model.Role;
 import be.jensberckmoes.personal_finance_tracker.service.UserService;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -59,6 +61,141 @@ public class UserControllerTest {
                 .andExpect(jsonPath("$.email").value("test@example.com"))
                 .andExpect(jsonPath("$.password").doesNotExist());
     }
+
+    @Test
+    public void givenMissingUsername_whenCreateUser_thenReturnsBadRequest() throws Exception {
+        final UserCreateDto inputUser = UserCreateDto.builder()
+                .password("Password123!")
+                .email("test@example.com")
+                .role(Role.USER)
+                .build();
+
+        mockMvc.perform(post("/users")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(new ObjectMapper().writeValueAsString(inputUser)))
+                .andDo(print())
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errors").exists());
+    }
+
+    @Test
+    public void givenInvalidEmail_whenCreateUser_thenReturnsBadRequest() throws Exception {
+        final UserCreateDto inputUser = UserCreateDto.builder()
+                .username("testuser")
+                .password("Password123!")
+                .email("invalid-email")
+                .role(Role.USER)
+                .build();
+
+        mockMvc.perform(post("/users")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(new ObjectMapper().writeValueAsString(inputUser)))
+                .andDo(print())
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errors").exists());
+    }
+    @Test
+    public void givenExistingUsername_whenCreateUser_thenReturnsConflict() throws Exception {
+        final UserCreateDto inputUser = UserCreateDto.builder()
+                .username("existinguser")
+                .password("Password123!")
+                .email("test@example.com")
+                .role(Role.USER)
+                .build();
+
+        when(userService.createUser(any(UserCreateDto.class)))
+                .thenThrow(new DuplicateUsernameException("Username already exists"));
+
+        mockMvc.perform(post("/users")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(new ObjectMapper().writeValueAsString(inputUser)))
+                .andDo(print())
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message").value("Username already exists"));
+    }
+    @Test
+    public void givenExistingEmail_whenCreateUser_thenReturnsConflict() throws Exception {
+        final UserCreateDto inputUser = UserCreateDto.builder()
+                .username("newuser")
+                .password("Password123!")
+                .email("existing@example.com")
+                .role(Role.USER)
+                .build();
+
+        when(userService.createUser(any(UserCreateDto.class)))
+                .thenThrow(new DuplicateEmailException("Email already exists"));
+
+        mockMvc.perform(post("/users")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(new ObjectMapper().writeValueAsString(inputUser)))
+                .andDo(print())
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message").value("Email already exists"));
+    }
+    @Test
+    public void givenNoCsrfToken_whenCreateUser_thenReturnsForbidden() throws Exception {
+        final UserCreateDto inputUser = UserCreateDto.builder()
+                .username("testuser")
+                .password("Password123!")
+                .email("test@example.com")
+                .role(Role.USER)
+                .build();
+
+        mockMvc.perform(post("/users")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(new ObjectMapper().writeValueAsString(inputUser)))
+                .andDo(print())
+                .andExpect(status().isForbidden());
+    }
+    @Test
+    public void givenNoRole_whenCreateUser_thenAssignDefaultRole() throws Exception {
+        final UserCreateDto inputUser = UserCreateDto.builder()
+                .username("testuser")
+                .password("Password123!")
+                .email("test@example.com")
+                .build();
+
+        final UserDto createdUser = UserDto.builder()
+                .username("testuser")
+                .email("test@example.com")
+                .role("USER") // Default role
+                .build();
+
+        when(userService.createUser(any(UserCreateDto.class))).thenReturn(createdUser);
+
+        mockMvc.perform(post("/users")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(new ObjectMapper().writeValueAsString(inputUser)))
+                .andDo(print())
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.role").value("USER"));
+    }
+    @Test
+    public void givenServiceFailure_whenCreateUser_thenReturnsInternalServerError() throws Exception {
+        final UserCreateDto inputUser = UserCreateDto.builder()
+                .username("testuser")
+                .password("Password123!")
+                .email("test@example.com")
+                .role(Role.USER)
+                .build();
+
+        when(userService.createUser(any(UserCreateDto.class)))
+                .thenThrow(new RuntimeException("Unexpected error occurred"));
+
+        mockMvc.perform(post("/users")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(new ObjectMapper().writeValueAsString(inputUser)))
+                .andDo(print())
+                .andExpect(status().isInternalServerError())
+                .andExpect(jsonPath("$.message").value("Unexpected error occurred"));
+    }
+
 
     @Test
     public void shouldReturnUserDetails_whenValidUserIdIsProvided() throws Exception {
