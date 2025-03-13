@@ -92,7 +92,6 @@ public class AppAppUserServiceTest {
 
         assertEquals("testuser", savedAppUser.getUsername());
         assertEquals("hashed_Password123!", savedAppUser.getPassword());
-        assertEquals(Role.USER, savedAppUser.getRole());
         assertEquals("test@example.com", savedAppUser.getEmail());
 
     }

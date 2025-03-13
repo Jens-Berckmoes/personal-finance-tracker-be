@@ -53,7 +53,6 @@ public class AppUserServiceImpl implements AppUserService {
                 .username(appUserCreateDto.getUsername())
                 .password(hashingService.hashPassword(appUserCreateDto.getPassword())) // Hash password
                 .email(appUserCreateDto.getEmail())
-                .role(Objects.isNull(appUserCreateDto.getRole()) ? Role.USER : appUserCreateDto.getRole()) // Default to USER
                 .build();
         final AppUser savedAppUser = appUserRepository.save(appUser);
 

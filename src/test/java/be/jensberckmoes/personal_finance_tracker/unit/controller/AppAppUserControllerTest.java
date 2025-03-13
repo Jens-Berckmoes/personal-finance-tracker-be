@@ -5,7 +5,6 @@ import be.jensberckmoes.personal_finance_tracker.dto.AppUserCreateDto;
 import be.jensberckmoes.personal_finance_tracker.dto.AppUserDto;
 import be.jensberckmoes.personal_finance_tracker.exception.DuplicateEmailException;
 import be.jensberckmoes.personal_finance_tracker.exception.DuplicateUsernameException;
-import be.jensberckmoes.personal_finance_tracker.model.Role;
 import be.jensberckmoes.personal_finance_tracker.service.AppUserService;
 import be.jensberckmoes.personal_finance_tracker.service.CustomUserDetailsService;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -33,7 +32,7 @@ public class AppAppUserControllerTest {
     private MockMvc mockMvc;
 
     @MockitoBean
-    private CustomUserDetailsService customUserDetailsService; // Mocking Spring Security's user service
+    private CustomUserDetailsService customUserDetailsService;
 
     @MockitoBean
     private AppUserService appUserService;
@@ -45,7 +44,6 @@ public class AppAppUserControllerTest {
                 .username("testuser")
                 .password("Password123!")
                 .email("test@example.com")
-                .role(Role.USER)
                 .build();
         final AppUserDto createdUser = AppUserDto
                 .builder()
@@ -72,7 +70,6 @@ public class AppAppUserControllerTest {
         final AppUserCreateDto inputUser = AppUserCreateDto.builder()
                 .password("Password123!")
                 .email("test@example.com")
-                .role(Role.USER)
                 .build();
 
         mockMvc.perform(post("/users")
@@ -90,7 +87,6 @@ public class AppAppUserControllerTest {
                 .username("testuser")
                 .password("Password123!")
                 .email("invalid-email")
-                .role(Role.USER)
                 .build();
 
         mockMvc.perform(post("/users")
@@ -101,13 +97,13 @@ public class AppAppUserControllerTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.errors").exists());
     }
+
     @Test
     public void givenExistingUsername_whenCreateUser_thenReturnsConflict() throws Exception {
         final AppUserCreateDto inputUser = AppUserCreateDto.builder()
                 .username("existinguser")
                 .password("Password123!")
                 .email("test@example.com")
-                .role(Role.USER)
                 .build();
 
         when(appUserService.createUser(any(AppUserCreateDto.class)))
@@ -121,13 +117,13 @@ public class AppAppUserControllerTest {
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.message").value("Username already exists"));
     }
+
     @Test
     public void givenExistingEmail_whenCreateUser_thenReturnsConflict() throws Exception {
         final AppUserCreateDto inputUser = AppUserCreateDto.builder()
                 .username("newuser")
                 .password("Password123!")
                 .email("existing@example.com")
-                .role(Role.USER)
                 .build();
 
         when(appUserService.createUser(any(AppUserCreateDto.class)))
@@ -141,13 +137,13 @@ public class AppAppUserControllerTest {
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.message").value("Email already exists"));
     }
+
     @Test
     public void givenNoCsrfToken_whenCreateUser_thenReturnsForbidden() throws Exception {
         final AppUserCreateDto inputUser = AppUserCreateDto.builder()
                 .username("testuser")
                 .password("Password123!")
                 .email("test@example.com")
-                .role(Role.USER)
                 .build();
 
         mockMvc.perform(post("/users")
@@ -156,6 +152,7 @@ public class AppAppUserControllerTest {
                 .andDo(print())
                 .andExpect(status().isForbidden());
     }
+
     @Test
     public void givenNoRole_whenCreateUser_thenAssignDefaultRole() throws Exception {
         final AppUserCreateDto inputUser = AppUserCreateDto.builder()
@@ -181,13 +178,13 @@ public class AppAppUserControllerTest {
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.role").value("USER"));
     }
+
     @Test
     public void givenServiceFailure_whenCreateUser_thenReturnsInternalServerError() throws Exception {
         final AppUserCreateDto inputUser = AppUserCreateDto.builder()
                 .username("testuser")
                 .password("Password123!")
                 .email("test@example.com")
-                .role(Role.USER)
                 .build();
 
         when(appUserService.createUser(any(AppUserCreateDto.class)))
