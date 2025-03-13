@@ -210,6 +210,26 @@ public class UserControllerTest {
         // Act & Assert: Perform the GET request and validate the response
         mockMvc.perform(get("/users?username=testuser")
                         .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.username").value("testuser"))
+                .andExpect(jsonPath("$.role").value("USER"))
+                .andExpect(jsonPath("$.email").value("test@example.com"));
+
+        verify(userService, times(1)).findByUsername("testuser");
+    }
+    @Test
+    public void shouldReturnUserDetails_whenValidUserIdIsProvidedAndRoleIsAdmin() throws Exception {
+        final UserDto createdUser = UserDto
+                .builder()
+                .username("testuser")
+                .email("test@example.com")
+                .role("ADMIN")
+                .build();
+        when(userService.findByUsername("testuser")).thenReturn(createdUser);
+
+        // Act & Assert: Perform the GET request and validate the response
+        mockMvc.perform(get("/users?username=testuser")
+                        .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.username").value("testuser"))
                 .andExpect(jsonPath("$.role").value("USER"))

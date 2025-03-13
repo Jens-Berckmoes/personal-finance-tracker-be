@@ -6,6 +6,7 @@ import be.jensberckmoes.personal_finance_tracker.service.UserService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -31,4 +32,12 @@ public class UserController {
         final UserDto user = userService.findByUsername(username);
         return ResponseEntity.ok(user);
     }
+
+    @GetMapping("/me")
+    public ResponseEntity<UserDto> getCurrentUser(final Authentication authentication) {
+        final String username = authentication.getName();
+        final UserDto user = userService.findByUsername(username);
+        return ResponseEntity.ok(user);
+    }
+
 }
