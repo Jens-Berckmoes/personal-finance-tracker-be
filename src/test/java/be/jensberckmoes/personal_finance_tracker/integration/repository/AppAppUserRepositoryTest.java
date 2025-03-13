@@ -1,8 +1,8 @@
 package be.jensberckmoes.personal_finance_tracker.integration.repository;
 
+import be.jensberckmoes.personal_finance_tracker.model.AppUser;
 import be.jensberckmoes.personal_finance_tracker.model.Role;
-import be.jensberckmoes.personal_finance_tracker.model.User;
-import be.jensberckmoes.personal_finance_tracker.repository.UserRepository;
+import be.jensberckmoes.personal_finance_tracker.repository.AppUserRepository;
 import be.jensberckmoes.personal_finance_tracker.service.HashingService;
 import jakarta.persistence.EntityManager;
 import jakarta.validation.ConstraintViolationException;
@@ -23,9 +23,9 @@ import java.util.stream.Stream;
 import static org.junit.jupiter.api.Assertions.*;
 
 @DataJpaTest
-public class UserRepositoryTest {
+public class AppAppUserRepositoryTest {
     @Autowired
-    private UserRepository userRepository;
+    private AppUserRepository appUserRepository;
     @Autowired
     private EntityManager entityManager;
     @Autowired
@@ -33,11 +33,11 @@ public class UserRepositoryTest {
     @MockitoBean
     private SecurityFilterChain mockSecurityFilterChain;
 
-    private User user;
+    private AppUser appUser;
 
     @BeforeEach
     public void setUp() {
-        user = User.builder()
+        appUser = AppUser.builder()
                 .password(hashingService.hashPassword("Password123!")) // Use hashed password
                 .username("testuser")
                 .email("test@example.com")
@@ -47,90 +47,90 @@ public class UserRepositoryTest {
 
     @Test
     public void givenUser_whenSave_thenPersistUser() {
-        final User savedUser = userRepository.save(user);
+        final AppUser savedAppUser = appUserRepository.save(appUser);
 
-        assertNotNull(savedUser.getId());
-        assertEquals("testuser", savedUser.getUsername());
-        assertNotEquals("Password123!", savedUser.getPassword());
-        assertEquals("test@example.com", savedUser.getEmail());
+        assertNotNull(savedAppUser.getId());
+        assertEquals("testuser", savedAppUser.getUsername());
+        assertNotEquals("Password123!", savedAppUser.getPassword());
+        assertEquals("test@example.com", savedAppUser.getEmail());
     }
 
     @Test
     public void givenNullUsername_whenSave_thenThrowException() {
-        user.setUsername(null);
+        appUser.setUsername(null);
 
-        assertThrows(Exception.class, () -> userRepository.save(user));
+        assertThrows(Exception.class, () -> appUserRepository.save(appUser));
     }
 
     @ParameterizedTest
     @MethodSource("providedUsernameInputs")
     public void givenInvalidUsernames_whenSave_thenThrowException(final String invalidUsername,
                                                                   final String expectedMessage) {
-        user.setUsername(invalidUsername);
+        appUser.setUsername(invalidUsername);
 
         ConstraintViolationException exception = assertThrows(ConstraintViolationException.class,
-                () -> userRepository.save(user));
+                () -> appUserRepository.save(appUser));
 
         assertTrue(exception.getMessage().contains(expectedMessage));
     }
 
     @Test
     public void givenNullPassword_whenSave_thenThrowException() {
-        user.setPassword(null);
+        appUser.setPassword(null);
 
-        assertThrows(Exception.class, () -> userRepository.save(user));
+        assertThrows(Exception.class, () -> appUserRepository.save(appUser));
     }
 
     @ParameterizedTest
     @MethodSource("providedPasswordInputs")
     public void givenInvalidPasswords_whenSave_thenThrowException(final String invalidPassword,
                                                                   final String expectedMessage) {
-        user.setPassword(invalidPassword);
+        appUser.setPassword(invalidPassword);
 
         ConstraintViolationException exception = assertThrows(ConstraintViolationException.class,
-                () -> userRepository.save(user));
+                () -> appUserRepository.save(appUser));
 
         assertTrue(exception.getMessage().contains(expectedMessage));
     }
 
     @Test
     public void givenNullEmail_whenSave_thenThrowException() {
-        user.setEmail(null);
+        appUser.setEmail(null);
 
-        assertThrows(Exception.class, () -> userRepository.save(user));
+        assertThrows(Exception.class, () -> appUserRepository.save(appUser));
     }
 
     @ParameterizedTest
     @MethodSource("providedEmailInputs")
     public void givenInvalidEmails_whenSave_thenThrowException(final String invalidUsername,
                                                                final String expectedMessage) {
-        user.setEmail(invalidUsername);
+        appUser.setEmail(invalidUsername);
 
         ConstraintViolationException exception = assertThrows(ConstraintViolationException.class,
-                () -> userRepository.save(user));
+                () -> appUserRepository.save(appUser));
 
         assertTrue(exception.getMessage().contains(expectedMessage));
     }
 
     @Test
     public void givenNullRole_whenSave_thenThrowException() {
-        user.setRole(null);
+        appUser.setRole(null);
 
-        assertThrows(Exception.class, () -> userRepository.save(user));
+        assertThrows(Exception.class, () -> appUserRepository.save(appUser));
     }
 
     @Test
     public void givenUserWithoutEnumTypeString_whenSave_thenRoleIsStoredAsOrdinal() {
-        user.setRole(Role.ADMIN);
-        final User savedUser = userRepository.save(user);
+        appUser.setRole(Role.ADMIN);
+        final AppUser savedAppUser = appUserRepository.save(appUser);
 
-        final User foundUser = entityManager.find(User.class, user.getId());
-        assertNotNull(foundUser);
-        assertEquals(Role.ADMIN, savedUser.getRole()); // Role object check
+        final AppUser foundAppUser = entityManager.find(AppUser.class, appUser.getId());
+        assertNotNull(foundAppUser);
+        assertEquals(Role.ADMIN, savedAppUser.getRole()); // Role object check
 
         final var roleValue = entityManager
                 .createNativeQuery("SELECT role FROM app_user WHERE id = :id")
-                .setParameter("id", user.getId())
+                .setParameter("id", appUser.getId())
                 .getSingleResult();
 
         assertEquals("ADMIN", roleValue);
@@ -138,72 +138,72 @@ public class UserRepositoryTest {
 
     @Test
     public void givenUserWithUserRole_whenSave_thenPersistRoleAsUser() {
-        final User savedUser = userRepository.save(user);
+        final AppUser savedAppUser = appUserRepository.save(appUser);
 
-        assertEquals(Role.USER, savedUser.getRole());
+        assertEquals(Role.USER, savedAppUser.getRole());
     }
 
     @Test
     public void givenUserWithAdminRole_whenSave_thenPersistRole() {
-        user.setRole(Role.ADMIN);
+        appUser.setRole(Role.ADMIN);
 
-        final User savedUser = userRepository.save(user);
+        final AppUser savedAppUser = appUserRepository.save(appUser);
 
-        assertEquals(Role.ADMIN, savedUser.getRole());
+        assertEquals(Role.ADMIN, savedAppUser.getRole());
     }
 
     @Test
     public void givenExistingUsername_whenFindByUsername_thenReturnUser() {
-        userRepository.save(user);
+        appUserRepository.save(appUser);
 
-        final Optional<User> possibleFoundUser = userRepository.findByUsername(user.getUsername());
+        final Optional<AppUser> possibleFoundUser = appUserRepository.findByUsername(appUser.getUsername());
 
         assertTrue(possibleFoundUser.isPresent());
-        assertEquals(user.getUsername(), possibleFoundUser.get().getUsername());
+        assertEquals(appUser.getUsername(), possibleFoundUser.get().getUsername());
     }
 
     @Test
     public void givenNonExistingUsername_whenFindByUsername_thenReturnEmptyOptional() {
-        final Optional<User> possibleFoundUser = userRepository.findByUsername("nonexistent");
+        final Optional<AppUser> possibleFoundUser = appUserRepository.findByUsername("nonexistent");
 
         assertFalse(possibleFoundUser.isPresent());
     }
 
     @Test
     public void givenDuplicateUsername_whenSave_thenThrowException() {
-        userRepository.save(user);
+        appUserRepository.save(appUser);
 
-        final User duplicateUser = User.builder()
+        final AppUser duplicateAppUser = AppUser.builder()
                 .password("Password123!")
                 .username("testuser")
                 .email("test2@example.com")
                 .role(Role.USER)
                 .build();
 
-        assertThrows(Exception.class, () -> userRepository.save(duplicateUser));
+        assertThrows(Exception.class, () -> appUserRepository.save(duplicateAppUser));
     }
 
     @Test
     public void givenDuplicateEmail_whenSave_thenThrowException() {
-        userRepository.save(user);
+        appUserRepository.save(appUser);
 
-        final User duplicateUser = User.builder()
+        final AppUser duplicateAppUser = AppUser.builder()
                 .password("Password123!")
                 .username("testuser2")
                 .email("test@example.com")
                 .role(Role.USER)
                 .build();
 
-        assertThrows(Exception.class, () -> userRepository.save(duplicateUser));
+        assertThrows(Exception.class, () -> appUserRepository.save(duplicateAppUser));
     }
 
     @Test
     public void givenUserWithHashedPassword_whenSave_thenPasswordIsPersisted() {
         final String hashedPassword = hashingService.hashPassword("Password123!");
-        user.setPassword(hashedPassword);
-        userRepository.saveAndFlush(user);
+        appUser.setPassword(hashedPassword);
+        appUserRepository.saveAndFlush(appUser);
 
-        final Optional<User> possibleFoundUser = userRepository.findByUsername(user.getUsername());
+        final Optional<AppUser> possibleFoundUser = appUserRepository.findByUsername(appUser.getUsername());
 
         // Assert
         assertNotNull(possibleFoundUser);
@@ -215,33 +215,33 @@ public class UserRepositoryTest {
 
     @Test
     public void givenRole_whenFindAllByRole_thenReturnUsersWithThatRole() {
-        user.setRole(Role.ADMIN);
-        userRepository.save(user);
+        appUser.setRole(Role.ADMIN);
+        appUserRepository.save(appUser);
 
-        final User user2 = User.builder()
+        final AppUser appUser2 = AppUser.builder()
                 .password(hashingService.hashPassword("Password123!")) // Use hashed password
                 .username("testuser2")
                 .email("test2@example.com")
                 .role(Role.USER)
                 .build();
-        userRepository.save(user2);
+        appUserRepository.save(appUser2);
 
-        final User user3 = User.builder()
+        final AppUser appUser3 = AppUser.builder()
                 .password(hashingService.hashPassword("Password123!")) // Use hashed password
                 .username("testuser3")
                 .email("test3@example.com")
                 .role(Role.ADMIN)
                 .build();
-        userRepository.save(user3);
+        appUserRepository.save(appUser3);
 
-        final List<User> admins = userRepository.findByRole(Role.ADMIN);
-        final List<User> users = userRepository.findByRole(Role.USER);
+        final List<AppUser> admins = appUserRepository.findByRole(Role.ADMIN);
+        final List<AppUser> appUsers = appUserRepository.findByRole(Role.USER);
         assertNotNull(admins);
         assertEquals(2, admins.size());
-        assertEquals(1, users.size());
+        assertEquals(1, appUsers.size());
         assertEquals(Role.ADMIN, admins.getFirst().getRole());
         assertEquals(Role.ADMIN, admins.get(1).getRole());
-        assertEquals(Role.USER, users.getFirst().getRole());
+        assertEquals(Role.USER, appUsers.getFirst().getRole());
     }
 
     private static Stream<Arguments> providedUsernameInputs() {
