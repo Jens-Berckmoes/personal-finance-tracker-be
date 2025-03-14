@@ -8,7 +8,7 @@ import be.jensberckmoes.personal_finance_tracker.model.AppUser;
 import be.jensberckmoes.personal_finance_tracker.model.AppUserEntityMapper;
 import be.jensberckmoes.personal_finance_tracker.model.Role;
 import be.jensberckmoes.personal_finance_tracker.repository.AppUserRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataAccessException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -19,19 +19,12 @@ import java.util.Objects;
 import java.util.function.Consumer;
 
 @Service
+@RequiredArgsConstructor
 public class AppUserServiceImpl implements AppUserService {
-
-    @Autowired
-    private AppUserRepository appUserRepository;
-
-    @Autowired
-    private HashingService hashingService;
-
-    @Autowired
-    private ValidationService validationService;
-
-    @Autowired
-    private AppUserEntityMapper appUserEntityMapper;
+    private final AppUserRepository appUserRepository;
+    private final HashingService hashingService;
+    private final ValidationService validationService;
+    private final AppUserEntityMapper appUserEntityMapper;
 
     @Override
     public AppUserDto createUser(final AppUserCreateDto appUserCreateDto) {
@@ -93,7 +86,7 @@ public class AppUserServiceImpl implements AppUserService {
     @Override
     public List<AppUserDto> getAllUsers() {
         final List<AppUser> appUsers = appUserRepository.findAll();
-        return appUsers.stream().map(i -> appUserEntityMapper.mapToDto(i)).toList();
+        return appUsers.stream().map(appUserEntityMapper::mapToDto).toList();
     }
 
     @Override
@@ -102,7 +95,7 @@ public class AppUserServiceImpl implements AppUserService {
             throw new NullParameterException("Role cannot be null");
         }
         final List<AppUser> appUsers = appUserRepository.findByRole(role);
-        return appUsers.stream().map(i -> appUserEntityMapper.mapToDto(i)).toList();
+        return appUsers.stream().map(appUserEntityMapper::mapToDto).toList();
     }
 
     @Override
@@ -111,7 +104,7 @@ public class AppUserServiceImpl implements AppUserService {
             throw new NullParameterException("Parameter 'username' cannot be null");
         }
         final Page<AppUser> usersPage = appUserRepository.findByUsernameContaining(substring, pageable);
-        return usersPage.map(i -> appUserEntityMapper.mapToDto(i));
+        return usersPage.map(appUserEntityMapper::mapToDto);
     }
 
     @Override
