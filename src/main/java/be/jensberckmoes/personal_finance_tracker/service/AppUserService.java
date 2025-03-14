@@ -30,5 +30,5 @@ public interface AppUserService {
 
     boolean emailExists(final String email);
 
-    boolean hasRole(final Long userId, final Role role);
+    boolean hasRole(final Long id, final Role role);
 }

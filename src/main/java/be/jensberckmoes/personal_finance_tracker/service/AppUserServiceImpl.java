@@ -5,10 +5,11 @@ import be.jensberckmoes.personal_finance_tracker.dto.AppUserDto;
 import be.jensberckmoes.personal_finance_tracker.dto.AppUserUpdateDto;
 import be.jensberckmoes.personal_finance_tracker.exception.*;
 import be.jensberckmoes.personal_finance_tracker.model.AppUser;
-import be.jensberckmoes.personal_finance_tracker.model.Role;
 import be.jensberckmoes.personal_finance_tracker.model.AppUserEntityMapper;
+import be.jensberckmoes.personal_finance_tracker.model.Role;
 import be.jensberckmoes.personal_finance_tracker.repository.AppUserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataAccessException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -34,29 +35,34 @@ public class AppUserServiceImpl implements AppUserService {
 
     @Override
     public AppUserDto createUser(final AppUserCreateDto appUserCreateDto) {
-        if (Objects.isNull(appUserCreateDto)) {
-            throw new NullParameterException("Parameter 'userUpdateDto' cannot be null");
-        }
-        if (appUserRepository.existsByUsername(appUserCreateDto.getUsername())) {
-            throw new DuplicateUsernameException("Username already taken");
-        }
-        if (!validationService.isValidUsername(appUserCreateDto.getUsername())) {
-            throw new InvalidAppUserException("Username is invalid");
-        }
-        if (!validationService.isValidPassword(appUserCreateDto.getPassword())) {
-            throw new InvalidPasswordException("User has invalid password. Password should be between 12-255 characters long, should contain 1 uppercase, 1 lowercase, 1 number and 1 special character(!.*_-).");
-        }
-        if (!validationService.isValidEmail(appUserCreateDto.getEmail())) {
-            throw new InvalidEmailException("User has invalid email. Email should be in the form (test@example.com).");
-        }
-        final AppUser appUser = AppUser.builder()
-                .username(appUserCreateDto.getUsername())
-                .password(hashingService.hashPassword(appUserCreateDto.getPassword())) // Hash password
-                .email(appUserCreateDto.getEmail())
-                .build();
-        final AppUser savedAppUser = appUserRepository.save(appUser);
+        try {
+            if (Objects.isNull(appUserCreateDto)) {
+                throw new NullParameterException("Parameter 'userUpdateDto' cannot be null");
+            }
+            if (appUserRepository.existsByUsername(appUserCreateDto.getUsername())) {
+                throw new DuplicateUsernameException("Username already taken");
+            }
+            if (!validationService.isValidUsername(appUserCreateDto.getUsername())) {
+                throw new InvalidAppUserException("Username is invalid");
+            }
+            if (!validationService.isValidPassword(appUserCreateDto.getPassword())) {
+                throw new InvalidPasswordException("User has invalid password. Password should be between 12-255 characters long, should contain 1 uppercase, 1 lowercase, 1 number and 1 special character(!.*_-).");
+            }
+            if (!validationService.isValidEmail(appUserCreateDto.getEmail())) {
+                throw new InvalidEmailException("User has invalid email. Email should be in the form (test@example.com).");
+            }
+            final AppUser appUser = AppUser.builder()
+                    .username(appUserCreateDto.getUsername())
+                    .password(hashingService.hashPassword(appUserCreateDto.getPassword())) // Hash password
+                    .email(appUserCreateDto.getEmail())
+                    .build();
+            final AppUser savedAppUser = appUserRepository.save(appUser);
 
-        return appUserEntityMapper.mapToDto(savedAppUser);
+            return appUserEntityMapper.mapToDto(savedAppUser);
+        } catch (DataAccessException ex){
+            throw new ServiceException("An unexpected error occurred while creating a user", ex);
+        }
+
     }
 
     @Override
@@ -68,6 +74,7 @@ public class AppUserServiceImpl implements AppUserService {
         return appUserEntityMapper.mapToDto(foundAppUser);
     }
 
+    @Override
     public AppUserDto findByUsername(final String username) {
         if (Objects.isNull(username)) {
             throw new NullParameterException("Parameter 'username' cannot be null");
@@ -161,15 +168,18 @@ public class AppUserServiceImpl implements AppUserService {
     }
 
     @Override
-    public boolean hasRole(final Long userId, final Role role) {
-        if (Objects.isNull(userId) || userId <= 0) {
+    public boolean hasRole(final Long id, final Role role) {
+        if (Objects.isNull(id) || id <= 0) {
             throw new InvalidAppUserIDException("ID must be a positive number");
         }
         if (Objects.isNull(role)) {
             throw new NullParameterException("Role cannot be null");
         }
-        return appUserRepository.findByIdAndRole(userId, role);
+        return appUserRepository.findByIdAndRole(id, role);
     }
+
+    //TODO: add updateUserRole method
+
 
     private <T> void updateFieldIfNotNull(final Consumer<T> setter, final T value) {
         if (Objects.nonNull(value)) {
