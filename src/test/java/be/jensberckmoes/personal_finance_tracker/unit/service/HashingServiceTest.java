@@ -32,8 +32,8 @@ public class HashingServiceTest {
     public void givenPassword_whenHashPassword_thenReturnHashedPasswordWithExpectedFormat() {
         final String password = "password123";
         final String hashedPassword = hashingService.hashPassword(password);
-
-        assertTrue(hashedPassword.startsWith("$2a$")); // Check for bcrypt prefix
+        final String bcryptPrefix = "$2a$";
+        assertTrue(hashedPassword.startsWith(bcryptPrefix));
     }
 
     @Test
@@ -42,7 +42,7 @@ public class HashingServiceTest {
         final String hashedPassword1 = hashingService.hashPassword(password);
         final String hashedPassword2 = hashingService.hashPassword(password);
 
-        assertNotEquals(hashedPassword1, hashedPassword2); // Check that the hashes are different
+        assertNotEquals(hashedPassword1, hashedPassword2);
     }
 
     @Test
@@ -50,7 +50,7 @@ public class HashingServiceTest {
         final String password = "password123";
         final String hashedPassword = hashingService.hashPassword(password);
 
-        assertTrue(passwordEncoder.matches(password, hashedPassword)); // Verify the hashed password
+        assertTrue(passwordEncoder.matches(password, hashedPassword));
     }
 
     @Test
@@ -75,7 +75,6 @@ public class HashingServiceTest {
 
     @Test
     public void givenNullPassword_whenHashPassword_thenThrowException() {
-        // Act and Assert
         final Exception exception = assertThrows(InvalidPasswordException.class, () -> hashingService.hashPassword(null));
 
         assertEquals("Password cannot be null", exception.getMessage());
@@ -83,7 +82,6 @@ public class HashingServiceTest {
 
     @Test
     public void givenEmptyPassword_whenHashPassword_thenThrowException() {
-        // Act and Assert
         final Exception exception = assertThrows(InvalidPasswordException.class, () -> hashingService.hashPassword(""));
 
         assertEquals("Password was empty", exception.getMessage());

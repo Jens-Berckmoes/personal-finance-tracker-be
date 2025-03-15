@@ -175,7 +175,7 @@ public class AppUserControllerTest {
         final AppUserDto createdUser = AppUserDto.builder()
                 .username("testuser")
                 .email("test@example.com")
-                .role("USER") // Default role
+                .role("USER")
                 .build();
 
         when(appUserService.createUser(any(AppUserCreateDto.class))).thenReturn(createdUser);
@@ -220,7 +220,7 @@ public class AppUserControllerTest {
                 .build();
         when(appUserService.findByUsername("testuser")).thenReturn(createdUser);
 
-        // Act & Assert: Perform the GET request and validate the response
+
         mockMvc.perform(get("/users?username=testuser")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isUnauthorized());
@@ -237,7 +237,7 @@ public class AppUserControllerTest {
                 .build();
         when(appUserService.findByUsername("testuser")).thenReturn(createdUser);
         when(validationService.isValidUsername("testuser")).thenReturn(true);
-        // Act & Assert: Perform the GET request and validate the response
+
         mockMvc.perform(get("/users?username=testuser")
                         .with(user("adminUser").roles("ADMIN"))
                         .contentType(MediaType.APPLICATION_JSON))
@@ -269,12 +269,12 @@ public class AppUserControllerTest {
     @Test
     public void givenAdminRole_whenFindNonexistentUsername_thenReturnNotFound() throws Exception {
         when(appUserService.findByUsername("nonexistentuser"))
-                .thenThrow(new AppUserNotFoundException("User not found")); // Simulate service behavior
+                .thenThrow(new AppUserNotFoundException("User not found"));
 
         mockMvc.perform(get("/users/nonexistentuser")
-                        .with(user("adminuser").roles("ADMIN")) // Simulate admin user
+                        .with(user("adminuser").roles("ADMIN"))
                         .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isNotFound()); // Expect 404 Not Found
+                .andExpect(status().isNotFound());
     }
 
     @Test
@@ -283,9 +283,9 @@ public class AppUserControllerTest {
 
         mockMvc.perform(get("/users")
                         .param("username", "' OR 1=1 --")
-                        .with(user("adminuser").roles("ADMIN")) // Simulate admin user
+                        .with(user("adminuser").roles("ADMIN"))
                         .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isBadRequest()) // Expect 400 Bad Request
+                .andExpect(status().isBadRequest())
                 .andExpect(result -> assertInstanceOf(ResponseStatusException.class, result.getResolvedException()))
                 .andExpect(result -> assertTrue(Objects.requireNonNull(result.getResolvedException()).getMessage().contains("Invalid username format")));
     }
@@ -294,9 +294,9 @@ public class AppUserControllerTest {
     @Test
     public void givenNoUsername_whenFindByUsername_thenReturnBadRequest() throws Exception {
         mockMvc.perform(get("/users")
-                        .with(user("adminuser").roles("ADMIN")) // Simulate admin user
+                        .with(user("adminuser").roles("ADMIN"))
                         .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isBadRequest()); // Expect 400 Bad Request
+                .andExpect(status().isBadRequest());
     }
 
 }

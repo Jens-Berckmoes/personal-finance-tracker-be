@@ -5,6 +5,7 @@ import be.jensberckmoes.personal_finance_tracker.dto.AppUserDto;
 import be.jensberckmoes.personal_finance_tracker.dto.AppUserUpdateDto;
 import be.jensberckmoes.personal_finance_tracker.exception.*;
 import be.jensberckmoes.personal_finance_tracker.model.AppUser;
+import be.jensberckmoes.personal_finance_tracker.model.AppUserEntityMapper;
 import be.jensberckmoes.personal_finance_tracker.model.Role;
 import be.jensberckmoes.personal_finance_tracker.repository.AppUserRepository;
 import be.jensberckmoes.personal_finance_tracker.service.AppUserServiceImpl;
@@ -19,6 +20,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -45,6 +47,9 @@ public class AppUserServiceTest {
 
     @Mock
     private ValidationService validationService;
+
+    @Spy
+    private AppUserEntityMapper appUserEntityMapper;
 
     @InjectMocks
     private AppUserServiceImpl userService;
@@ -127,7 +132,7 @@ public class AppUserServiceTest {
         final Exception exception = assertThrows(NullParameterException.class, () -> userService.createUser(null));
 
         assertEquals("Parameter 'userUpdateDto' cannot be null", exception.getMessage());
-        verify(appUserRepository, never()).save(any(AppUser.class)); // Ensure save is not called
+        verify(appUserRepository, never()).save(any(AppUser.class));
     }
 
     @Test
@@ -252,8 +257,8 @@ public class AppUserServiceTest {
         verify(appUserRepository).save(userCaptor.capture());
         final AppUser savedAppUser = userCaptor.getValue();
 
-        assertNotEquals("Password123!", savedAppUser.getPassword()); // Ensure raw password is not saved
-        assertEquals("hashed_Password123!", savedAppUser.getPassword()); // Ensure the expected hash is saved
+        assertNotEquals("Password123!", savedAppUser.getPassword());
+        assertEquals("hashed_Password123!", savedAppUser.getPassword());
     }
 
     @Test
@@ -393,15 +398,15 @@ public class AppUserServiceTest {
     @Test
     public void givenUsersExist_whenGetAll_thenMapsFieldsCorrectly() {
         final AppUser adminAppUser = createTestUser(1L, "adminuser", "Ab1!" + "A".repeat(12), "adminuser@example.com", Role.ADMIN);
-        final Page<AppUser> pagedAppUsers = new PageImpl<>(List.of(adminAppUser)); // Mock a paged result
+        final Page<AppUser> pagedAppUsers = new PageImpl<>(List.of(adminAppUser));
 
         when(appUserRepository.findAll(any(Pageable.class))).thenReturn(pagedAppUsers);
 
-        final Pageable pageable = PageRequest.of(0, 10); // Simulate a small page request
+        final Pageable pageable = PageRequest.of(0, 10);
         final Page<AppUserDto> resultPage = userService.getAllUsers(pageable);
 
         assertEquals(1, resultPage.getTotalElements());
-        final AppUserDto appUserDto = resultPage.getContent().getFirst(); // Fetch first (and only) user
+        final AppUserDto appUserDto = resultPage.getContent().getFirst();
         assertEquals("adminuser", appUserDto.getUsername());
         assertEquals("adminuser@example.com", appUserDto.getEmail());
         assertEquals("ADMIN", appUserDto.getRole());
@@ -492,7 +497,6 @@ public class AppUserServiceTest {
 
     @Test
     public void givenEmptySubstring_whenFindByUsernameContainsWithPagination_thenReturnsAllUsersPaginated() {
-        // Arrange
         final String substring = "";
         final Pageable pageable = PageRequest.of(0, 2); // Page 0, 2 results per page
         final List<AppUser> appUsers = List.of(
@@ -503,10 +507,8 @@ public class AppUserServiceTest {
 
         when(appUserRepository.findByUsernameContaining(substring, pageable)).thenReturn(userPage);
 
-        // Act
         final Page<AppUserDto> result = userService.getUsersByUsernameContains(substring, pageable);
 
-        // Assert
         assertNotNull(result);
         assertEquals(2, result.getContent().size());
         assertEquals(5, result.getTotalElements());
@@ -521,7 +523,7 @@ public class AppUserServiceTest {
         final Exception exception = assertThrows(NullParameterException.class, () -> userService.updateUser(null, appUserUpdateDto));
 
         assertEquals("Parameters 'id' and 'userUpdateDto' cannot be null", exception.getMessage());
-        verify(appUserRepository, never()).save(any(AppUser.class)); // Ensure save is not called
+        verify(appUserRepository, never()).save(any(AppUser.class));
     }
 
     @Test
@@ -529,7 +531,7 @@ public class AppUserServiceTest {
         final Exception exception = assertThrows(NullParameterException.class, () -> userService.updateUser(1L, null));
 
         assertEquals("Parameters 'id' and 'userUpdateDto' cannot be null", exception.getMessage());
-        verify(appUserRepository, never()).save(any(AppUser.class)); // Ensure save is not called
+        verify(appUserRepository, never()).save(any(AppUser.class));
     }
 
     @Test
@@ -582,13 +584,12 @@ public class AppUserServiceTest {
         final AppUserDto result = userService.updateUser(id, appUserUpdateDto);
 
         assertNotNull(result);
-        assertEquals("oldUsername", result.getUsername()); // Username not updated
-        assertEquals("updated@example.com", result.getEmail()); // Email updated
+        assertEquals("oldUsername", result.getUsername());
+        assertEquals("updated@example.com", result.getEmail());
     }
 
     @Test
     public void whenUpdateUser_thenVerifyRepositoryInteractions() {
-        // Arrange
         final Long id = 1L;
         final AppUserUpdateDto appUserUpdateDto = new AppUserUpdateDto("updatedUsername", "updated@example.com");
         final AppUser existingAppUser = createTestUser(id, "oldUsername", "Password123!", "old@example.com", Role.USER);
@@ -605,14 +606,12 @@ public class AppUserServiceTest {
 
     @Test
     public void givenEmailAlreadyExists_whenUpdateUser_thenThrowDuplicateEmailException() {
-        // Arrange
         final Long id = 1L;
         final AppUserUpdateDto appUserUpdateDto = new AppUserUpdateDto("updatedUsername", "existing@example.com");
 
         when(appUserRepository.existsByEmail("existing@example.com")).thenReturn(true);
         when(validationService.isValidEmail("existing@example.com")).thenReturn(true);
 
-        // Act & Assert
         assertThrows(DuplicateEmailException.class, () -> userService.updateUser(id, appUserUpdateDto));
         verify(appUserRepository, never()).save(any(AppUser.class));
     }
@@ -659,10 +658,8 @@ public class AppUserServiceTest {
         final String nonExistingUsername = "nonexistentuser";
         when(appUserRepository.existsByUsername(nonExistingUsername)).thenReturn(false);
 
-        // Act
         final boolean result = userService.usernameExists(nonExistingUsername);
 
-        // Assert
         assertFalse(result);
         verify(appUserRepository, times(1)).existsByUsername(nonExistingUsername);
     }

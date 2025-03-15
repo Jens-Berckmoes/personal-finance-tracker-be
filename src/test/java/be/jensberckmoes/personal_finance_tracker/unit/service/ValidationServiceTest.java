@@ -145,16 +145,16 @@ public class ValidationServiceTest {
                 Arguments.of("Ab!456789!*-_.", true),    // Valid with all allowed special characters
                 Arguments.of("!Ab1_12345678", true),     // Valid even with trailing special characters.
                 Arguments.of("Ab1_12345678!", true) ,    // Valid even with trailing special characters.
-                Arguments.of("Ab!!1234567!!", true)        // Multiple allowed special characters
+                Arguments.of("Ab!!1234567!!", true)      // Multiple allowed special characters
         );
     }
 
     private static Stream<Arguments> providedPasswordsForLengthBoundaries() {
         return Stream.of(
                 Arguments.of("Ab!1" + "1".repeat(2), false),    // Less than twelve characters
-                Arguments.of("Ab!1" + "1".repeat(252), false),   // 256 (> 255) characters
+                Arguments.of("Ab!1" + "1".repeat(252), false),  // 256 (> 255) characters
                 Arguments.of("Ab!1" + "1".repeat(8), true),     // Exactly 12 (minimum)
-                Arguments.of("Ab!1" + "1".repeat(251), true)     // Exactly 255 (maximum)
+                Arguments.of("Ab!1" + "1".repeat(251), true)    // Exactly 255 (maximum)
         );
     }
 
@@ -199,7 +199,7 @@ public class ValidationServiceTest {
         return Stream.of(
                 Arguments.of("a".repeat(20), true),     // Maximum length of 20
                 Arguments.of("a".repeat(21), false),    // Exceeds maximum length
-                Arguments.of("abc", true),                     // Minimum length of 3
+                Arguments.of("abc", true),                    // Minimum length of 3
                 Arguments.of("a".repeat(2), false)      // Less than 3 length
         );
     }

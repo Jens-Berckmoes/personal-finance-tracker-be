@@ -23,7 +23,7 @@ import java.util.stream.Stream;
 import static org.junit.jupiter.api.Assertions.*;
 
 @DataJpaTest
-public class AppAppUserRepositoryTest {
+public class AppUserRepositoryTest {
     @Autowired
     private AppUserRepository appUserRepository;
     @Autowired
@@ -38,7 +38,7 @@ public class AppAppUserRepositoryTest {
     @BeforeEach
     public void setUp() {
         appUser = AppUser.builder()
-                .password(hashingService.hashPassword("Password123!")) // Use hashed password
+                .password(hashingService.hashPassword("Password123!"))
                 .username("testuser")
                 .email("test@example.com")
                 .role(Role.USER)
@@ -126,7 +126,7 @@ public class AppAppUserRepositoryTest {
 
         final AppUser foundAppUser = entityManager.find(AppUser.class, appUser.getId());
         assertNotNull(foundAppUser);
-        assertEquals(Role.ADMIN, savedAppUser.getRole()); // Role object check
+        assertEquals(Role.ADMIN, savedAppUser.getRole());
 
         final var roleValue = entityManager
                 .createNativeQuery("SELECT role FROM app_user WHERE id = :id")
@@ -205,7 +205,6 @@ public class AppAppUserRepositoryTest {
 
         final Optional<AppUser> possibleFoundUser = appUserRepository.findByUsername(appUser.getUsername());
 
-        // Assert
         assertNotNull(possibleFoundUser);
         assertTrue(possibleFoundUser.isPresent());
         final String foundUserPassword = possibleFoundUser.get().getPassword();
@@ -219,7 +218,7 @@ public class AppAppUserRepositoryTest {
         appUserRepository.save(appUser);
 
         final AppUser appUser2 = AppUser.builder()
-                .password(hashingService.hashPassword("Password123!")) // Use hashed password
+                .password(hashingService.hashPassword("Password123!"))
                 .username("testuser2")
                 .email("test2@example.com")
                 .role(Role.USER)
@@ -227,7 +226,7 @@ public class AppAppUserRepositoryTest {
         appUserRepository.save(appUser2);
 
         final AppUser appUser3 = AppUser.builder()
-                .password(hashingService.hashPassword("Password123!")) // Use hashed password
+                .password(hashingService.hashPassword("Password123!"))
                 .username("testuser3")
                 .email("test3@example.com")
                 .role(Role.ADMIN)
@@ -246,7 +245,7 @@ public class AppAppUserRepositoryTest {
 
     private static Stream<Arguments> providedUsernameInputs() {
         return Stream.of(
-                Arguments.of("", "Username must be between 3 and 20 characters."),                                  // Empty string
+                Arguments.of("", "Username must be between 3 and 20 characters."),                                          // Empty string
                 Arguments.of("AB", "Username must be between 3 and 20 characters."),                                        // 2 length (<3)
                 Arguments.of("A".repeat(21), "Username must be between 3 and 20 characters."),                        // 21 length (>20)
                 Arguments.of("Ab!".repeat(4), "Username can only contain letters, numbers, dots, or underscores.")    // Invalid regex

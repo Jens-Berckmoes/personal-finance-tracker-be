@@ -23,7 +23,6 @@ public class CustomUserDetailsService implements UserDetailsService {
         final AppUser appUser = appUserRepository.findByUsername(username)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found"));
 
-        // Convert the single role to a GrantedAuthority
         final GrantedAuthority authority = new SimpleGrantedAuthority("ROLE_" + appUser.getRole().name());
 
         return new org.springframework.security.core.userdetails.User(

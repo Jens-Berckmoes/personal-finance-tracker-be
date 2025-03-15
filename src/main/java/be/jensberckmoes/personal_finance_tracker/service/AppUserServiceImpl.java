@@ -46,7 +46,7 @@ public class AppUserServiceImpl implements AppUserService {
             }
             final AppUser appUser = AppUser.builder()
                     .username(appUserCreateDto.getUsername())
-                    .password(hashingService.hashPassword(appUserCreateDto.getPassword())) // Hash password
+                    .password(hashingService.hashPassword(appUserCreateDto.getPassword()))
                     .email(appUserCreateDto.getEmail())
                     .build();
             final AppUser savedAppUser = appUserRepository.save(appUser);

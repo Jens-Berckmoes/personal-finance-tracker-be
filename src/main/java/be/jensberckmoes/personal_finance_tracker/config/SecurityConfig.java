@@ -24,7 +24,7 @@ public class SecurityConfig {
 
                         .anyRequest().permitAll()
                 )
-                .httpBasic(httpBasic -> httpBasic.realmName("Realm")); // HTTP Basic Auth config
+                .httpBasic(httpBasic -> httpBasic.realmName("Realm"));
 
         return http.build();
     }
