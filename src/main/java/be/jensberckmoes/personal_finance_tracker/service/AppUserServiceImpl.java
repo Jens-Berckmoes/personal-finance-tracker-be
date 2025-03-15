@@ -84,9 +84,9 @@ public class AppUserServiceImpl implements AppUserService {
     }
 
     @Override
-    public List<AppUserDto> getAllUsers() {
-        final List<AppUser> appUsers = appUserRepository.findAll();
-        return appUsers.stream().map(appUserEntityMapper::mapToDto).toList();
+    public Page<AppUserDto> getAllUsers(final Pageable pageable) {
+        final Page<AppUser> usersPage = appUserRepository.findAll(pageable);
+        return usersPage.map(appUserEntityMapper::mapToDto);
     }
 
     @Override

@@ -16,7 +16,7 @@ public interface AppUserService {
 
     AppUserDto findByUsername(final String username);
 
-    List<AppUserDto> getAllUsers();
+    Page<AppUserDto> getAllUsers(final Pageable pageable);
 
     List<AppUserDto> getUsersByRole(final Role role);
 

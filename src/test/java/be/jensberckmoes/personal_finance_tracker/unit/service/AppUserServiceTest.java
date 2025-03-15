@@ -4,12 +4,11 @@ import be.jensberckmoes.personal_finance_tracker.dto.AppUserCreateDto;
 import be.jensberckmoes.personal_finance_tracker.dto.AppUserDto;
 import be.jensberckmoes.personal_finance_tracker.dto.AppUserUpdateDto;
 import be.jensberckmoes.personal_finance_tracker.exception.*;
-import be.jensberckmoes.personal_finance_tracker.model.Role;
 import be.jensberckmoes.personal_finance_tracker.model.AppUser;
-import be.jensberckmoes.personal_finance_tracker.model.AppUserEntityMapper;
+import be.jensberckmoes.personal_finance_tracker.model.Role;
 import be.jensberckmoes.personal_finance_tracker.repository.AppUserRepository;
-import be.jensberckmoes.personal_finance_tracker.service.HashingService;
 import be.jensberckmoes.personal_finance_tracker.service.AppUserServiceImpl;
+import be.jensberckmoes.personal_finance_tracker.service.HashingService;
 import be.jensberckmoes.personal_finance_tracker.service.ValidationService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -20,7 +19,6 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -37,7 +35,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-public class AppAppUserServiceTest {
+public class AppUserServiceTest {
 
     @Mock
     private AppUserRepository appUserRepository;
@@ -47,9 +45,6 @@ public class AppAppUserServiceTest {
 
     @Mock
     private ValidationService validationService;
-
-    @Spy
-    private AppUserEntityMapper appUserEntityMapper;
 
     @InjectMocks
     private AppUserServiceImpl userService;
@@ -298,18 +293,22 @@ public class AppAppUserServiceTest {
 
     @Test
     public void whenGetAllUsersIsCalled_thenReturnAllUsers() {
-        final AppUser adminAppUser = createTestUser(1L, "adminuser", "Ab1!" + "A".repeat(12), "adminuser@example.com", Role.ADMIN);
-        final AppUser testAppUser = createTestUser(2L, "testuser", "Ab1!" + "B".repeat(12), "testuser@example.com", Role.USER);
-        when(appUserRepository.findAll()).thenReturn(List.of(adminAppUser, testAppUser));
-
-        final List<AppUserDto> appUserDtoList = userService.getAllUsers();
-        assertNotNull(appUserDtoList);
-        assertFalse(appUserDtoList.isEmpty());
-        assertEquals(2, appUserDtoList.size());
-        assertAll(
-                () -> assertEquals("adminuser", appUserDtoList.getFirst().getUsername()),
-                () -> assertEquals("testuser", appUserDtoList.get(1).getUsername())
+        final Pageable pageable = PageRequest.of(0, 2);
+        final List<AppUser> appUsers = List.of(
+                createTestUser(1L, "adminuser", "Ab1!" + "A".repeat(12), "adminuser@example.com", Role.ADMIN),
+                createTestUser(2L, "testuser", "Ab1!" + "B".repeat(12), "testuser@example.com", Role.USER)
         );
+        final Page<AppUser> userPage = new PageImpl<>(appUsers, pageable, 5);
+        when(appUserRepository.findAll(pageable)).thenReturn(userPage);
+
+        final Page<AppUserDto> result = userService.getAllUsers(pageable);
+
+        assertNotNull(result);
+        assertEquals(2, result.getContent().size());
+        assertEquals(5, result.getTotalElements());
+        assertEquals(3, result.getTotalPages());
+        assertEquals("adminuser", result.getContent().getFirst().getUsername());
+        assertEquals("testuser", result.getContent().get(1).getUsername());
     }
 
     @Test
@@ -361,40 +360,48 @@ public class AppAppUserServiceTest {
     }
 
     @Test
-    public void givenNoUsersExist_whenGetAll_thenReturnsEmptyList() {
-        when(appUserRepository.findAll()).thenReturn(Collections.emptyList());
+    public void givenNoUsersExist_whenGetAll_thenReturnsEmptyPage() {
+        when(appUserRepository.findAll(any(Pageable.class))).thenReturn(Page.empty());
 
-        final List<AppUserDto> result = userService.getAllUsers();
+        final Pageable pageable = PageRequest.of(0, 20);
+        final Page<AppUserDto> resultPage = userService.getAllUsers(pageable);
 
-        assertNotNull(result);
-        assertTrue(result.isEmpty());
+        assertNotNull(resultPage);
+        assertTrue(resultPage.isEmpty());
     }
 
     @Test
-    public void givenLargeNumberOfUsers_whenGetAll_thenReturnsAllUsers() {
+    public void givenLargeNumberOfUsers_whenGetAll_thenReturnsFirstPageWith20Users() {
         final List<AppUser> largeAppUserList = IntStream
-                .rangeClosed(1, 1000)
+                .rangeClosed(1, 100)
                 .mapToObj(i -> new AppUser((long) i, "user" + i, "email" + i + "@example.com", "Password123!", Role.USER))
                 .toList();
 
-        when(appUserRepository.findAll()).thenReturn(largeAppUserList);
+        final Page<AppUser> pagedAppUsers = new PageImpl<>(largeAppUserList.subList(0, 20));
 
-        final List<AppUserDto> result = userService.getAllUsers();
+        when(appUserRepository.findAll(any(Pageable.class))).thenReturn(pagedAppUsers);
 
-        assertNotNull(result);
-        assertEquals(1000, result.size());
-        assertEquals("user1", result.getFirst().getUsername());
-        assertEquals("user1000", result.get(999).getUsername());
+        Pageable pageable = PageRequest.of(0, 20);
+        Page<AppUserDto> resultPage = userService.getAllUsers(pageable);
+
+        assertNotNull(resultPage);
+        assertEquals(20, resultPage.getNumberOfElements());
+        assertEquals("user1", resultPage.getContent().getFirst().getUsername());
+        assertEquals("user20", resultPage.getContent().get(19).getUsername());
     }
 
     @Test
     public void givenUsersExist_whenGetAll_thenMapsFieldsCorrectly() {
         final AppUser adminAppUser = createTestUser(1L, "adminuser", "Ab1!" + "A".repeat(12), "adminuser@example.com", Role.ADMIN);
-        when(appUserRepository.findAll()).thenReturn(List.of(adminAppUser));
+        final Page<AppUser> pagedAppUsers = new PageImpl<>(List.of(adminAppUser)); // Mock a paged result
 
-        final List<AppUserDto> result = userService.getAllUsers();
+        when(appUserRepository.findAll(any(Pageable.class))).thenReturn(pagedAppUsers);
 
-        final AppUserDto appUserDto = result.getFirst();
+        final Pageable pageable = PageRequest.of(0, 10); // Simulate a small page request
+        final Page<AppUserDto> resultPage = userService.getAllUsers(pageable);
+
+        assertEquals(1, resultPage.getTotalElements());
+        final AppUserDto appUserDto = resultPage.getContent().getFirst(); // Fetch first (and only) user
         assertEquals("adminuser", appUserDto.getUsername());
         assertEquals("adminuser@example.com", appUserDto.getEmail());
         assertEquals("ADMIN", appUserDto.getRole());
