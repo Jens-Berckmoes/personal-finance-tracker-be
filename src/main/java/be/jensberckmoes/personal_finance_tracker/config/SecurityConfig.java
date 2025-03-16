@@ -17,11 +17,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.PUT, "/users/{id}/role").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.DELETE, "/users/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.GET, "/users").hasRole("ADMIN")
-
                         .requestMatchers("/users/me").authenticated()
-
                         .requestMatchers(HttpMethod.POST, "/users").permitAll()
-
                         .anyRequest().permitAll()
                 )
                 .httpBasic(httpBasic -> httpBasic.realmName("Realm"));

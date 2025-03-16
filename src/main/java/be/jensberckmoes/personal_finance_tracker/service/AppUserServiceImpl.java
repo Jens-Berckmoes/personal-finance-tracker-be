@@ -12,6 +12,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataAccessException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -171,8 +172,28 @@ public class AppUserServiceImpl implements AppUserService {
         return appUserRepository.findByIdAndRole(id, role);
     }
 
-    //TODO: add updateUserRole method
+    @Override
+    public AppUserDto updateUserRole(final Long id, final Role role) {
+        if (Objects.isNull(id) || id <= 0) {
+            throw new InvalidAppUserIDException("ID must be a positive number");
+        }
 
+        if (Objects.isNull(role)) {
+            throw new NullParameterException("Role cannot be null");
+        }
+
+        final AppUser appUser = appUserRepository.findById(id)
+                .orElseThrow(() -> new UsernameNotFoundException("User with ID " + id + " not found"));
+
+        if (appUser.getRole().equals(role)) {
+            return appUserEntityMapper.mapToDto(appUser);
+        }
+
+        appUser.setRole(role);
+        final AppUser updatedUser = appUserRepository.save(appUser);
+
+        return appUserEntityMapper.mapToDto(updatedUser);
+    }
 
     private <T> void updateFieldIfNotNull(final Consumer<T> setter, final T value) {
         if (Objects.nonNull(value)) {

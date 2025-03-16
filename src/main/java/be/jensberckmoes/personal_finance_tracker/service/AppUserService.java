@@ -31,4 +31,6 @@ public interface AppUserService {
     boolean emailExists(final String email);
 
     boolean hasRole(final Long id, final Role role);
+
+    AppUserDto updateUserRole(final Long id, final Role role);
 }

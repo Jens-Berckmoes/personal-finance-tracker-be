@@ -3,10 +3,12 @@ package be.jensberckmoes.personal_finance_tracker.unit.controller;
 import be.jensberckmoes.personal_finance_tracker.controller.AppUserController;
 import be.jensberckmoes.personal_finance_tracker.dto.AppUserCreateDto;
 import be.jensberckmoes.personal_finance_tracker.dto.AppUserDto;
+import be.jensberckmoes.personal_finance_tracker.dto.AppUserUpdateDto;
 import be.jensberckmoes.personal_finance_tracker.exception.AppUserNotFoundException;
 import be.jensberckmoes.personal_finance_tracker.exception.DuplicateEmailException;
 import be.jensberckmoes.personal_finance_tracker.exception.DuplicateUsernameException;
 import be.jensberckmoes.personal_finance_tracker.exception.ServiceException;
+import be.jensberckmoes.personal_finance_tracker.model.Role;
 import be.jensberckmoes.personal_finance_tracker.service.AppUserService;
 import be.jensberckmoes.personal_finance_tracker.service.CustomUserDetailsService;
 import be.jensberckmoes.personal_finance_tracker.service.ValidationService;
@@ -14,11 +16,15 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.util.List;
 import java.util.Objects;
 
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
@@ -27,11 +33,9 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(AppUserController.class)
 public class AppUserControllerTest {
@@ -268,10 +272,12 @@ public class AppUserControllerTest {
 
     @Test
     public void givenAdminRole_whenFindNonexistentUsername_thenReturnNotFound() throws Exception {
+        when(validationService.isValidUsername("nonexistentuser")).thenReturn(true);
         when(appUserService.findByUsername("nonexistentuser"))
                 .thenThrow(new AppUserNotFoundException("User not found"));
 
-        mockMvc.perform(get("/users/nonexistentuser")
+        mockMvc.perform(get("/users")
+                        .param("username", "nonexistentuser")
                         .with(user("adminuser").roles("ADMIN"))
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isNotFound());
@@ -298,5 +304,213 @@ public class AppUserControllerTest {
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isBadRequest());
     }
+
+    @Test
+    public void givenAuthenticatedUser_whenGetCurrentUser_thenReturnsUserDetails() throws Exception {
+        final AppUserDto mockUserDto = AppUserDto.builder()
+                .username("testuser")
+                .email("testuser@example.com")
+                .role("USER")
+                .build();
+        when(appUserService.findByUsername("testuser")).thenReturn(mockUserDto);
+
+        mockMvc.perform(get("/users/me")
+                        .with(user("testuser").roles("USER"))
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.username").value("testuser"))
+                .andExpect(jsonPath("$.email").value("testuser@example.com"))
+                .andExpect(jsonPath("$.role").value("USER"));
+    }
+
+    @Test
+    public void givenValidUserId_whenGetUserById_thenReturnsUserDetails() throws Exception {
+        final AppUserDto mockUserDto = AppUserDto.builder()
+                .id(1L)
+                .username("testuser")
+                .email("testuser@example.com")
+                .role("USER")
+                .build();
+        when(appUserService.getUserById(1L)).thenReturn(mockUserDto);
+
+        mockMvc.perform(get("/users/1")
+                        .with(user("adminuser").roles("ADMIN"))
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.username").value("testuser"))
+                .andExpect(jsonPath("$.email").value("testuser@example.com"))
+                .andExpect(jsonPath("$.role").value("USER"));
+    }
+
+    @Test
+    public void givenUsersExist_whenGetAllUsers_thenReturnsPagedUsers() throws Exception {
+        final List<AppUserDto> userList = List.of(
+                AppUserDto.builder()
+                        .id(1L)
+                        .username("user1")
+                        .email("user1@example.com")
+                        .role("USER")
+                        .build(),
+                AppUserDto.builder()
+                        .id(2L)
+                        .username("user2")
+                        .email("user2@example.com")
+                        .role("USER")
+                        .build()
+        );
+        Page<AppUserDto> userPage = new PageImpl<>(userList);
+        when(appUserService.getAllUsers(any(Pageable.class))).thenReturn(userPage);
+
+        mockMvc.perform(get("/users/all")
+                        .with(user("adminuser").roles("ADMIN"))
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content[0].username").value("user1"))
+                .andExpect(jsonPath("$.content[1].username").value("user2"));
+    }
+
+    @Test
+    public void givenUsersWithRole_whenGetUsersByRole_thenReturnsUsersList() throws Exception {
+        final List<AppUserDto> userList = List.of(
+                AppUserDto.builder()
+                        .id(1L)
+                        .username("admin1")
+                        .email("admin1@example.com")
+                        .role("USER")
+                        .build(),
+                AppUserDto.builder()
+                        .id(2L)
+                        .username("admin2")
+                        .email("admin2@example.com")
+                        .role("USER")
+                        .build()
+        );
+        when(appUserService.getUsersByRole(Role.ADMIN)).thenReturn(userList);
+
+        mockMvc.perform(get("/users/role/ADMIN")
+                        .with(user("adminuser").roles("ADMIN"))
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].username").value("admin1"))
+                .andExpect(jsonPath("$[1].username").value("admin2"));
+    }
+
+    @Test
+    public void givenUsersWithSubstring_whenGetUsersByUsernameContains_thenReturnsPagedUsers() throws Exception {
+        final List<AppUserDto> userList = List.of(
+                AppUserDto.builder()
+                        .id(1L)
+                        .username("testuser1")
+                        .email("test1@example.com")
+                        .role("USER")
+                        .build(),
+                AppUserDto.builder()
+                        .id(2L)
+                        .username("testuser2")
+                        .email("test2@example.com")
+                        .role("USER")
+                        .build()
+        );
+        final Page<AppUserDto> userPage = new PageImpl<>(userList);
+        when(appUserService.getUsersByUsernameContains(eq("test"), any(Pageable.class))).thenReturn(userPage);
+
+        mockMvc.perform(get("/users/search")
+                        .param("substring", "test")
+                        .with(user("adminuser").roles("ADMIN"))
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content[0].username").value("testuser1"))
+                .andExpect(jsonPath("$.content[1].username").value("testuser2"));
+    }
+
+    @Test
+    public void givenAdminUser_whenUpdateAnotherUserRoleToAdmin_thenRoleIsUpdatedSuccessfully() throws Exception {
+        final AppUserDto initialUserDto = AppUserDto.builder()
+                .id(2L)
+                .username("secondUser")
+                .email("seconduser@example.com")
+                .role("USER")
+                .build();
+        when(appUserService.getUserById(2L)).thenReturn(initialUserDto);
+
+        final AppUserUpdateDto updateDto = AppUserUpdateDto.builder()
+                .username("secondUser")
+                .email("seconduser@example.com")
+                .build();
+
+        final AppUserDto updatedUserDto = AppUserDto.builder()
+                .id(2L)
+                .username("secondUser")
+                .email("seconduser@example.com")
+                .role("ADMIN")
+                .build();
+        when(appUserService.updateUser(eq(2L), any(AppUserUpdateDto.class))).thenReturn(updatedUserDto);
+
+        mockMvc.perform(get("/users/2")
+                        .with(user("adminuser").roles("ADMIN"))
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.username").value("secondUser"))
+                .andExpect(jsonPath("$.email").value("seconduser@example.com"))
+                .andExpect(jsonPath("$.role").value("USER")); // Initial role is USER
+
+        mockMvc.perform(put("/users/2")
+                        .with(user("adminuser").roles("ADMIN"))
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(new ObjectMapper().writeValueAsString(updateDto)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.username").value("secondUser"))
+                .andExpect(jsonPath("$.email").value("seconduser@example.com"))
+                .andExpect(jsonPath("$.role").value("ADMIN")); // Role should now be updated to ADMIN
+    }
+
+
+    @Test
+    public void givenValidUserId_whenDeleteUser_thenReturnsNoContent() throws Exception {
+        doNothing().when(appUserService).deleteUser(1L);
+
+        mockMvc.perform(delete("/users/1")
+                        .with(user("adminuser").roles("ADMIN"))
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isNoContent());
+    }
+
+    @Test
+    public void givenUsername_whenCheckUsernameExists_thenReturnsTrue() throws Exception {
+        when(appUserService.usernameExists("testuser")).thenReturn(true);
+
+        mockMvc.perform(get("/users/exists/username")
+                        .param("username", "testuser")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(content().string("true"));
+    }
+
+    @Test
+    public void givenEmail_whenCheckEmailExists_thenReturnsTrue() throws Exception {
+        when(appUserService.emailExists("testuser@example.com")).thenReturn(true);
+
+        mockMvc.perform(get("/users/exists/email")
+                        .param("email", "testuser@example.com")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(content().string("true"));
+    }
+
+    @Test
+    public void givenUserWithRole_whenCheckHasRole_thenReturnsTrue() throws Exception {
+        when(appUserService.hasRole(1L, Role.ADMIN)).thenReturn(true);
+
+        mockMvc.perform(get("/users/1/hasRole")
+                        .param("role", "ADMIN")
+                        .with(user("adminuser").roles("ADMIN"))
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(content().string("true"));
+    }
+
 
 }
