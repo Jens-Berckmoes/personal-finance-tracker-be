@@ -28,8 +28,9 @@ public class TransactionServiceTest {
 
     @Test
     public void testAddTransaction_ShouldSaveTransactionAndReturnSavedTransaction() {
-        final AppUser user = new AppUser();
-        user.setId(1L);
+        final AppUser user = AppUser.builder()
+                .id(1L)
+                .build();
         final Transaction transaction = Transaction.builder()
                 .user(user)
                 .amount(new BigDecimal("50.00"))
