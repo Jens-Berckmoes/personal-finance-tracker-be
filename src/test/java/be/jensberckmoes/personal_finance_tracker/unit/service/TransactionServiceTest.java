@@ -4,7 +4,7 @@ import be.jensberckmoes.personal_finance_tracker.model.AppUser;
 import be.jensberckmoes.personal_finance_tracker.model.Transaction;
 import be.jensberckmoes.personal_finance_tracker.model.TransactionType;
 import be.jensberckmoes.personal_finance_tracker.repository.TransactionRepository;
-import be.jensberckmoes.personal_finance_tracker.service.TransactionService;
+import be.jensberckmoes.personal_finance_tracker.service.TransactionServiceImpl;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -24,29 +24,13 @@ public class TransactionServiceTest {
     private TransactionRepository transactionRepository;
 
     @InjectMocks
-    private TransactionService transactionService;
+    private TransactionServiceImpl transactionService;
 
     @Test
-    public void testAddTransaction_ShouldSaveTransactionAndReturnSavedTransaction() {
-        final AppUser user = AppUser.builder()
-                .id(1L)
-                .build();
-        final Transaction transaction = Transaction.builder()
-                .user(user)
-                .amount(new BigDecimal("50.00"))
-                .type(TransactionType.EXPENSE)
-                .date(LocalDateTime.now())
-                .description("Groceries")
-                .build();
-
-        final Transaction savedTransaction = Transaction.builder()
-                .id(1L)
-                .user(user)
-                .amount(new BigDecimal("50.00"))
-                .type(TransactionType.EXPENSE)
-                .date(LocalDateTime.now())
-                .description("Groceries")
-                .build();
+    public void givenValidTransaction_whenAddTransactions_thenTransactionIsPersisted() {
+        final AppUser user = createUser().build();
+        final Transaction transaction = createTransactionWithOptionalFields(user).build();
+        final Transaction savedTransaction = createTransactionWithOptionalFields(user).id(1L).build();
 
         when(transactionRepository.save(transaction)).thenReturn(savedTransaction);
 
@@ -54,5 +38,40 @@ public class TransactionServiceTest {
 
         assertEquals(savedTransaction, result);
         verify(transactionRepository, times(1)).save(transaction);
+    }
+
+    @Test
+    public void givenValidTransactionWithOnlyNecessaryFields_whenAddTransactions_thenTransactionIsPersisted() {
+        final AppUser user = createUser().build();
+        final Transaction transaction = createTransaction(user).build();
+        final Transaction savedTransaction = createTransaction(user).id(1L).build();
+
+        when(transactionRepository.save(transaction)).thenReturn(savedTransaction);
+
+        final Transaction result = transactionService.addTransaction(transaction);
+
+        assertEquals(savedTransaction, result);
+        verify(transactionRepository, times(1)).save(transaction);
+    }
+
+    private AppUser.AppUserBuilder createUser() {
+        return AppUser.builder()
+                .id(1L);
+    }
+
+    private Transaction.TransactionBuilder createTransaction(final AppUser user) {
+        return Transaction.builder()
+                .user(user)
+                .amount(new BigDecimal("50.00"))
+                .date(LocalDateTime.now());
+    }
+
+    private Transaction.TransactionBuilder createTransactionWithOptionalFields(final AppUser user) {
+        return Transaction.builder()
+                .user(user)
+                .amount(new BigDecimal("50.00"))
+                .type(TransactionType.EXPENSE)
+                .date(LocalDateTime.now())
+                .description("Groceries");
     }
 }
