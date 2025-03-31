@@ -101,4 +101,13 @@ public class CategoryRepositoryTest {
                 .build();
         assertThrows(DataIntegrityViolationException.class, () -> categoryRepository.save(duplicateCategory));
     }
+
+    @Test
+    public void givenCategoryWithLongDescription_whenSave_thenThrowsException() {
+        final Category category = Category.builder()
+                .name("TEST")
+                .description("a".repeat(256))
+                .build();
+        assertThrows(ConstraintViolationException.class, () -> categoryRepository.save(category));
+    }
 }

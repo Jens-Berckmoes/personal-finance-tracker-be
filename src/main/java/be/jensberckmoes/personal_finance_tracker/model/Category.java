@@ -25,6 +25,7 @@ public class Category {
     @Column(name = "name", nullable = false, unique = true, length = 50)
     private String name;
 
+    @Size(max = 255, message = "Description cannot exceed 255 characters")
     @Column(name = "description")
     private String description;
 }
