@@ -1,7 +1,8 @@
 package be.jensberckmoes.personal_finance_tracker.service;
 
-import be.jensberckmoes.personal_finance_tracker.model.Transaction;
+import be.jensberckmoes.personal_finance_tracker.dto.TransactionCreateDto;
+import be.jensberckmoes.personal_finance_tracker.dto.TransactionDto;
 
 public interface TransactionService {
-    Transaction addTransaction(final Transaction transaction);
+    TransactionDto addTransaction(final TransactionCreateDto transactionCreateDto);
 }

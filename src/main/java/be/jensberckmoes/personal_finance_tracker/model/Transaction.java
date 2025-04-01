@@ -20,17 +20,27 @@ public class Transaction {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "userId", nullable = false)
     private AppUser user;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "categoryId")
     private Category category;
 
+    @Column(name = "amount")
     private BigDecimal amount;
 
+    @Column(name = "type")
     private TransactionType type;
 
-    private TransactionMethod paymentMethod;
+    @Column(name = "method")
+    private TransactionMethod method;
 
+    @Temporal(TemporalType.TIMESTAMP)
+    @Column(name = "date")
     private LocalDateTime date;
 
+    @Column(name = "description")
     private String description;
 }
