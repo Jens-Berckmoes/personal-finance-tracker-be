@@ -6,7 +6,7 @@ import be.jensberckmoes.personal_finance_tracker.model.*;
 import be.jensberckmoes.personal_finance_tracker.repository.AppUserRepository;
 import be.jensberckmoes.personal_finance_tracker.repository.CategoryRepository;
 import be.jensberckmoes.personal_finance_tracker.repository.TransactionRepository;
-import be.jensberckmoes.personal_finance_tracker.service.TransactionServiceImpl;
+import be.jensberckmoes.personal_finance_tracker.service.impl.TransactionServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -73,12 +73,11 @@ public class TransactionServiceTest {
                 .description("Groceries")
                 .build();
         final Transaction savedTransaction = createTransactionWithOptionalFields().id(1L).build();
-        final TransactionDto expectedDto = convertTransactionToDto(savedTransaction);
-        final TransactionDto result = transactionService.addTransaction(transactionCreateDto);
-
         when(transactionRepository.save(transaction)).thenReturn(savedTransaction);
         when(transactionEntityMapper.fromDto(any(TransactionCreateDto.class))).thenReturn(transaction);
+        final TransactionDto expectedDto = convertTransactionToDto(savedTransaction);
         when(transactionEntityMapper.toDto(any(Transaction.class))).thenReturn(expectedDto);
+        final TransactionDto result = transactionService.addTransaction(transactionCreateDto);
 
         assertThat(result).usingRecursiveAssertion().isEqualTo(expectedDto);
         verify(transactionRepository, times(1)).save(transaction);
@@ -87,12 +86,11 @@ public class TransactionServiceTest {
     @Test
     public void givenValidTransactionWithOnlyNecessaryFields_whenAddTransactions_thenTransactionIsPersisted() {
         final Transaction savedTransaction = createTransaction().id(1L).build();
-        final TransactionDto expectedDto = convertTransactionToDto(savedTransaction);
-        final TransactionDto result = transactionService.addTransaction(transactionCreateDto);
-
         when(transactionRepository.save(transaction)).thenReturn(savedTransaction);
         when(transactionEntityMapper.fromDto(any(TransactionCreateDto.class))).thenReturn(transaction);
+        final TransactionDto expectedDto = convertTransactionToDto(savedTransaction);
         when(transactionEntityMapper.toDto(any(Transaction.class))).thenReturn(expectedDto);
+        final TransactionDto result = transactionService.addTransaction(transactionCreateDto);
 
         assertThat(result).usingRecursiveAssertion().isEqualTo(expectedDto);
         verify(transactionRepository, times(1)).save(transaction);

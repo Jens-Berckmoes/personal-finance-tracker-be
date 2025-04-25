@@ -8,9 +8,9 @@ import be.jensberckmoes.personal_finance_tracker.model.AppUser;
 import be.jensberckmoes.personal_finance_tracker.model.AppUserEntityMapper;
 import be.jensberckmoes.personal_finance_tracker.model.Role;
 import be.jensberckmoes.personal_finance_tracker.repository.AppUserRepository;
-import be.jensberckmoes.personal_finance_tracker.service.AppUserServiceImpl;
+import be.jensberckmoes.personal_finance_tracker.service.AppUserValidationService;
+import be.jensberckmoes.personal_finance_tracker.service.impl.AppUserServiceImpl;
 import be.jensberckmoes.personal_finance_tracker.service.HashingService;
-import be.jensberckmoes.personal_finance_tracker.service.ValidationService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -46,7 +46,7 @@ public class AppUserServiceTest {
     private HashingService hashingService;
 
     @Mock
-    private ValidationService validationService;
+    private AppUserValidationService validationService;
 
     @Spy
     private AppUserEntityMapper appUserEntityMapper;
@@ -96,7 +96,6 @@ public class AppUserServiceTest {
 
     }
 
-
     @Test
     public void givenValidUser_whenCreateUser_thenUserPropertiesMatch() {
         mockValidUserSetup();
@@ -114,7 +113,6 @@ public class AppUserServiceTest {
         verify(hashingService).hashPassword(appUserCreateDto.getPassword());
     }
 
-
     @Test
     public void givenValidUser_whenRegister_thenRepositorySaveIsCalled() {
         mockValidUserSetup();
@@ -129,6 +127,9 @@ public class AppUserServiceTest {
 
     @Test
     public void givenNullUser_whenRegister_thenThrowException() {
+        doThrow(new NullParameterException("Parameter 'userUpdateDto' cannot be null"))
+                .when(validationService).validateAppUserCreateDto(any());
+
         final Exception exception = assertThrows(NullParameterException.class, () -> userService.createUser(null));
 
         assertEquals("Parameter 'userUpdateDto' cannot be null", exception.getMessage());
@@ -138,8 +139,10 @@ public class AppUserServiceTest {
     @Test
     public void givenEmptyUsername_whenRegister_thenThrowException() {
         appUserCreateDto.setUsername("");
+        doThrow(new InvalidAppUserNameException("Username is invalid"))
+                .when(validationService).validateAppUserCreateDto(appUserCreateDto);
 
-        final Exception exception = assertThrows(InvalidAppUserException.class, () -> userService.createUser(appUserCreateDto));
+        final Exception exception = assertThrows(InvalidAppUserNameException.class, () -> userService.createUser(appUserCreateDto));
 
         assertEquals("Username is invalid", exception.getMessage());
         verify(appUserRepository, never()).save(any(AppUser.class));
@@ -148,9 +151,10 @@ public class AppUserServiceTest {
     @Test
     public void givenInvalidEmail_whenRegister_thenThrowException() {
         appUserCreateDto.setEmail("invalid-email");
-        when(validationService.isValidUsername(appUserCreateDto.getUsername())).thenReturn(true);
-        when(validationService.isValidPassword(appUserCreateDto.getPassword())).thenReturn(true);
-        when(validationService.isValidEmail(appUserCreateDto.getEmail())).thenReturn(false);
+
+        doThrow(new InvalidEmailException("User has invalid email. Email should be in the form (test@example.com)."))
+                .when(validationService)
+                .validateAppUserCreateDto(appUserCreateDto);
 
         final Exception exception = assertThrows(InvalidEmailException.class, () -> userService.createUser(appUserCreateDto));
 
@@ -159,20 +163,18 @@ public class AppUserServiceTest {
     }
 
     @Test
-    public void givenValidUser_whenRegister_thenValidationServiceMethodsAreCalled() {
+    public void givenValidUser_whenRegister_thenValidationServiceMethodIsCalled() {
         mockValidUserSetup();
 
         final AppUserDto registeredUser = userService.createUser(appUserCreateDto);
 
         assertNotNull(registeredUser);
-        verify(validationService, times(1)).isValidUsername(appUserCreateDto.getUsername());
-        verify(validationService, times(1)).isValidEmail(appUserCreateDto.getEmail());
+        verify(validationService, times(1)).validateAppUserCreateDto(appUserCreateDto);
     }
 
     @Test
     public void givenExistingUsername_whenFindByUsername_thenReturnUser() {
         when(appUserRepository.findByUsername("testuser")).thenReturn(Optional.of(appUser));
-        when(validationService.isValidUsername(appUserCreateDto.getUsername())).thenReturn(true);
 
         final AppUserDto user = userService.findByUsername("testuser");
 
@@ -189,27 +191,31 @@ public class AppUserServiceTest {
     @Test
     public void givenNonExistingUsername_whenFindByUsername_thenThrowException() {
         when(appUserRepository.findByUsername("nonexistent")).thenReturn(Optional.empty());
-        when(validationService.isValidUsername("nonexistent")).thenReturn(true);
 
-        final Exception exception = assertThrows(InvalidAppUserException.class, () -> userService.findByUsername("nonexistent"));
+        final Exception exception = assertThrows(InvalidAppUserNameException.class, () -> userService.findByUsername("nonexistent"));
 
         assertTrue(exception.getMessage().contains("Username does not exist"));
     }
 
     @Test
     public void givenNullUsername_whenFindByUsername_thenThrowException() {
-        final Exception exception = assertThrows(NullParameterException.class, () -> userService.findByUsername(null));
+        doThrow(new InvalidAppUserNameException("Username can not be null."))
+                .when(validationService).validateUsername(null);
+        final Exception exception = assertThrows(InvalidAppUserNameException.class, () -> userService.findByUsername(null));
 
-        assertTrue(exception.getMessage().contains("Parameter 'username' cannot be null"), "Message should indicate invalid input.");
+        assertTrue(exception.getMessage().contains("Username can not be null."), "Message should indicate invalid input.");
+        
         verify(appUserRepository, never()).findByUsername(anyString());
     }
 
 
     @Test
     public void givenEmptyUsername_whenFindByUsername_thenThrowException() {
-        final Exception exception = assertThrows(BlankParameterException.class, () -> userService.findByUsername(""));
+        doThrow(new InvalidAppUserNameException("Username can not be empty"))
+                .when(validationService).validateUsername(any());
+        final Exception exception = assertThrows(InvalidAppUserNameException.class, () -> userService.findByUsername(""));
 
-        assertTrue(exception.getMessage().contains("Parameter 'username' cannot be blank"), "Message should indicate invalid input.");
+        assertTrue(exception.getMessage().contains("Username can not be empty"), "Message should indicate invalid input.");
         verify(appUserRepository, never()).findByUsername(anyString());
     }
 
@@ -227,7 +233,6 @@ public class AppUserServiceTest {
     @Test
     public void givenUsernameInDifferentCase_whenFindByUsername_thenReturnFoundUser() {
         when(appUserRepository.findByUsername("TestUser")).thenReturn(Optional.of(appUser));
-        when(validationService.isValidUsername("testuser")).thenReturn(true);
 
         final AppUserDto appUserDto = userService.findByUsername("TestUser");
 
@@ -238,8 +243,10 @@ public class AppUserServiceTest {
     @Test
     public void givenUserWithWeakPassword_whenRegister_thenThrowException() {
         appUserCreateDto.setPassword("123456");
-        when(validationService.isValidPassword(appUserCreateDto.getPassword())).thenReturn(false);
-        when(validationService.isValidUsername(appUserCreateDto.getUsername())).thenReturn(true);
+
+        doThrow(new InvalidPasswordException("User has invalid password. Password should be between 12-255 characters long, should contain 1 uppercase, 1 lowercase, 1 number and 1 special character(!.*_-)."))
+                .when(validationService)
+                .validateAppUserCreateDto(appUserCreateDto);
 
         final Exception exception = assertThrows(InvalidPasswordException.class, () -> userService.createUser(appUserCreateDto));
 
@@ -279,7 +286,7 @@ public class AppUserServiceTest {
 
     @Test
     public void givenInvalidUser_whenFindById_thenThrowException() {
-        final InvalidAppUserException exception = assertThrows(InvalidAppUserException.class,
+        final InvalidAppUserNameException exception = assertThrows(InvalidAppUserNameException.class,
                 () -> userService.getUserById(99L));
 
         assertTrue(exception.getMessage().contains("Username does not exist"));
@@ -290,6 +297,8 @@ public class AppUserServiceTest {
     @MethodSource("providedFindByIdValidations")
     public void givenInvalidParameterValues_whenFindById_thenThrowException(final Long idValue,
                                                                             final String expectedMessage) {
+        doThrow(new InvalidAppUserIDException("ID must be a positive number"))
+                .when(validationService).validateUserId(idValue);
         final InvalidAppUserIDException exception = assertThrows(InvalidAppUserIDException.class,
                 () -> userService.getUserById(idValue));
 
@@ -519,18 +528,22 @@ public class AppUserServiceTest {
 
     @Test
     public void givenNullId_whenUpdateDto_thenThrowException() {
+        doThrow(new InvalidAppUserIDException("ID must be a positive number"))
+                .when(validationService).validateUserId(null);
         final AppUserUpdateDto appUserUpdateDto = new AppUserUpdateDto("updatedUsername", "updated@example.com");
-        final Exception exception = assertThrows(NullParameterException.class, () -> userService.updateUser(null, appUserUpdateDto));
+        final Exception exception = assertThrows(InvalidAppUserIDException.class, () -> userService.updateUser(null, appUserUpdateDto));
 
-        assertEquals("Parameters 'id' and 'userUpdateDto' cannot be null", exception.getMessage());
+        assertEquals("ID must be a positive number", exception.getMessage());
         verify(appUserRepository, never()).save(any(AppUser.class));
     }
 
     @Test
     public void givenNullUserUpdateDto_whenUpdateDto_thenThrowException() {
+        doThrow(new NullParameterException("Parameter 'userUpdateDto' cannot be null"))
+                .when(validationService).validateAppUserUpdateDto(any());
         final Exception exception = assertThrows(NullParameterException.class, () -> userService.updateUser(1L, null));
 
-        assertEquals("Parameters 'id' and 'userUpdateDto' cannot be null", exception.getMessage());
+        assertEquals("Parameter 'userUpdateDto' cannot be null", exception.getMessage());
         verify(appUserRepository, never()).save(any(AppUser.class));
     }
 
@@ -542,32 +555,34 @@ public class AppUserServiceTest {
 
         when(appUserRepository.findById(id)).thenReturn(Optional.of(existingAppUser));
         when(appUserRepository.save(any(AppUser.class))).thenAnswer(invocation -> invocation.getArgument(0));
-        when(validationService.isValidEmail(appUserUpdateDto.getEmail())).thenReturn(true);
+        doNothing().when(validationService).validateAppUserUpdateDto(appUserUpdateDto);
 
         final AppUserDto result = userService.updateUser(id, appUserUpdateDto);
 
         assertNotNull(result);
         assertEquals("updatedUsername", result.getUsername());
         assertEquals("updated@example.com", result.getEmail());
+        verify(validationService, times(1)).validateAppUserUpdateDto(appUserUpdateDto);
     }
 
     @Test
     public void givenNonExistingId_whenUpdateUser_thenThrowUserNotFoundException() {
         final Long id = 1L;
         final AppUserUpdateDto appUserUpdateDto = new AppUserUpdateDto("updatedUsername", "updated@example.com");
-        when(validationService.isValidEmail(appUserUpdateDto.getEmail())).thenReturn(true);
         when(appUserRepository.findById(id)).thenReturn(Optional.empty());
 
         assertThrows(AppUserNotFoundException.class, () -> userService.updateUser(id, appUserUpdateDto));
         verify(appUserRepository, never()).save(any(AppUser.class));
+        verify(validationService, times(1)).validateAppUserUpdateDto(appUserUpdateDto);
     }
 
     @Test
     public void givenInvalidUserUpdateDto_whenUpdateUser_thenThrowValidationException() {
         final Long id = 1L;
         final AppUserUpdateDto appUserUpdateDto = new AppUserUpdateDto(null, "invalid-email");
-
-        assertThrows(InvalidEmailException.class, () -> userService.updateUser(id, appUserUpdateDto));
+        doThrow(new InvalidAppUserNameException("Username can not be null."))
+                .when(validationService).validateAppUserUpdateDto(any());
+        assertThrows(InvalidAppUserNameException.class, () -> userService.updateUser(id, appUserUpdateDto));
         verify(appUserRepository, never()).save(any(AppUser.class));
     }
 
@@ -579,13 +594,14 @@ public class AppUserServiceTest {
 
         when(appUserRepository.findById(id)).thenReturn(Optional.of(existingAppUser));
         when(appUserRepository.save(any(AppUser.class))).thenAnswer(invocation -> invocation.getArgument(0));
-        when(validationService.isValidEmail(appUserUpdateDto.getEmail())).thenReturn(true);
+        doNothing().when(validationService).validateAppUserUpdateDto(appUserUpdateDto);
 
         final AppUserDto result = userService.updateUser(id, appUserUpdateDto);
 
         assertNotNull(result);
         assertEquals("oldUsername", result.getUsername());
         assertEquals("updated@example.com", result.getEmail());
+        verify(validationService, times(1)).validateAppUserUpdateDto(appUserUpdateDto);
     }
 
     @Test
@@ -595,13 +611,14 @@ public class AppUserServiceTest {
         final AppUser existingAppUser = createTestUser(id, "oldUsername", "Password123!", "old@example.com", Role.USER);
 
         when(appUserRepository.findById(id)).thenReturn(Optional.of(existingAppUser));
-        when(validationService.isValidEmail(appUserUpdateDto.getEmail())).thenReturn(true);
+        doNothing().when(validationService).validateAppUserUpdateDto(appUserUpdateDto);
         when(appUserRepository.save(any(AppUser.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         userService.updateUser(id, appUserUpdateDto);
 
         verify(appUserRepository, times(1)).findById(id);
         verify(appUserRepository, times(1)).save(any(AppUser.class));
+        verify(validationService, times(1)).validateAppUserUpdateDto(appUserUpdateDto);
     }
 
     @Test
@@ -610,10 +627,11 @@ public class AppUserServiceTest {
         final AppUserUpdateDto appUserUpdateDto = new AppUserUpdateDto("updatedUsername", "existing@example.com");
 
         when(appUserRepository.existsByEmail("existing@example.com")).thenReturn(true);
-        when(validationService.isValidEmail("existing@example.com")).thenReturn(true);
+        doNothing().when(validationService).validateAppUserUpdateDto(appUserUpdateDto);
 
         assertThrows(DuplicateEmailException.class, () -> userService.updateUser(id, appUserUpdateDto));
         verify(appUserRepository, never()).save(any(AppUser.class));
+        verify(validationService, times(1)).validateAppUserUpdateDto(appUserUpdateDto);
     }
 
     @Test
@@ -805,8 +823,5 @@ public class AppUserServiceTest {
     private void mockValidUserSetup() {
         when(appUserRepository.save(any(AppUser.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(hashingService.hashPassword(appUserCreateDto.getPassword())).thenReturn("hashed_Password123!");
-        when(validationService.isValidUsername(appUserCreateDto.getUsername())).thenReturn(true);
-        when(validationService.isValidPassword(appUserCreateDto.getPassword())).thenReturn(true);
-        when(validationService.isValidEmail(appUserCreateDto.getEmail())).thenReturn(true);
     }
 }

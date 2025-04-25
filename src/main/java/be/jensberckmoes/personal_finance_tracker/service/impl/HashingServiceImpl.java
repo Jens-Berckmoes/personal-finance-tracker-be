@@ -1,6 +1,7 @@
-package be.jensberckmoes.personal_finance_tracker.service;
+package be.jensberckmoes.personal_finance_tracker.service.impl;
 
 import be.jensberckmoes.personal_finance_tracker.exception.InvalidPasswordException;
+import be.jensberckmoes.personal_finance_tracker.service.HashingService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;

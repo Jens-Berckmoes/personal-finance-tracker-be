@@ -4,14 +4,14 @@ import be.jensberckmoes.personal_finance_tracker.controller.AppUserController;
 import be.jensberckmoes.personal_finance_tracker.dto.AppUserCreateDto;
 import be.jensberckmoes.personal_finance_tracker.dto.AppUserDto;
 import be.jensberckmoes.personal_finance_tracker.dto.AppUserUpdateDto;
-import be.jensberckmoes.personal_finance_tracker.exception.AppUserNotFoundException;
-import be.jensberckmoes.personal_finance_tracker.exception.DuplicateEmailException;
-import be.jensberckmoes.personal_finance_tracker.exception.DuplicateUsernameException;
-import be.jensberckmoes.personal_finance_tracker.exception.ServiceException;
+import be.jensberckmoes.personal_finance_tracker.exception.*;
 import be.jensberckmoes.personal_finance_tracker.model.Role;
+import be.jensberckmoes.personal_finance_tracker.repository.CategoryRepository;
+import be.jensberckmoes.personal_finance_tracker.repository.TransactionRepository;
 import be.jensberckmoes.personal_finance_tracker.service.AppUserService;
+import be.jensberckmoes.personal_finance_tracker.service.AppUserValidationService;
 import be.jensberckmoes.personal_finance_tracker.service.CustomUserDetailsService;
-import be.jensberckmoes.personal_finance_tracker.service.ValidationService;
+import be.jensberckmoes.personal_finance_tracker.service.TransactionService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -50,7 +50,16 @@ public class AppUserControllerTest {
     private AppUserService appUserService;
 
     @MockitoBean
-    private ValidationService validationService;
+    private AppUserValidationService validationService;
+
+    @MockitoBean
+    private TransactionRepository transactionRepository;
+
+    @MockitoBean
+    private TransactionService transactionService;
+
+    @MockitoBean
+    private CategoryRepository categoryRepository;
 
     @Test
     public void givenValidUserDto_whenCreateUser_thenReturnsCreatedStatus() throws Exception {
@@ -240,7 +249,7 @@ public class AppUserControllerTest {
                 .role("ADMIN")
                 .build();
         when(appUserService.findByUsername("testuser")).thenReturn(createdUser);
-        when(validationService.isValidUsername("testuser")).thenReturn(true);
+        doNothing().when(validationService).validateUsername("testuser");
 
         mockMvc.perform(get("/users?username=testuser")
                         .with(user("adminUser").roles("ADMIN"))
@@ -251,6 +260,7 @@ public class AppUserControllerTest {
                 .andExpect(jsonPath("$.email").value("test@example.com"));
 
         verify(appUserService, times(1)).findByUsername("testuser");
+        verify(validationService, times(1)).validateUsername("testuser");
     }
 
     @Test
@@ -272,7 +282,7 @@ public class AppUserControllerTest {
 
     @Test
     public void givenAdminRole_whenFindNonexistentUsername_thenReturnNotFound() throws Exception {
-        when(validationService.isValidUsername("nonexistentuser")).thenReturn(true);
+        doNothing().when(validationService).validateUsername("nonexistentuser");
         when(appUserService.findByUsername("nonexistentuser"))
                 .thenThrow(new AppUserNotFoundException("User not found"));
 
@@ -281,11 +291,15 @@ public class AppUserControllerTest {
                         .with(user("adminuser").roles("ADMIN"))
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isNotFound());
+
+        verify(validationService, times(1)).validateUsername("nonexistentuser");
+        verify(appUserService, times(1)).findByUsername("nonexistentuser");
     }
 
     @Test
     public void givenInvalidUsername_whenFindByUsername_thenReturnBadRequest() throws Exception {
-        when(validationService.isValidUsername("' OR 1=1 --")).thenReturn(false);
+        doThrow(new InvalidAppUserNameException("Invalid username format"))
+                .when(validationService).validateUsername("' OR 1=1 --");
 
         mockMvc.perform(get("/users")
                         .param("username", "' OR 1=1 --")
@@ -294,8 +308,9 @@ public class AppUserControllerTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(result -> assertInstanceOf(ResponseStatusException.class, result.getResolvedException()))
                 .andExpect(result -> assertTrue(Objects.requireNonNull(result.getResolvedException()).getMessage().contains("Invalid username format")));
+        verify(validationService, times(1)).validateUsername("' OR 1=1 --");
+        verify(appUserService, never()).findByUsername(anyString());
     }
-
 
     @Test
     public void givenNoUsername_whenFindByUsername_thenReturnBadRequest() throws Exception {

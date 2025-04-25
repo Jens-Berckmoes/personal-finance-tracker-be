@@ -3,9 +3,10 @@ package be.jensberckmoes.personal_finance_tracker.controller;
 import be.jensberckmoes.personal_finance_tracker.dto.AppUserCreateDto;
 import be.jensberckmoes.personal_finance_tracker.dto.AppUserDto;
 import be.jensberckmoes.personal_finance_tracker.dto.AppUserUpdateDto;
+import be.jensberckmoes.personal_finance_tracker.exception.InvalidAppUserNameException;
 import be.jensberckmoes.personal_finance_tracker.model.Role;
 import be.jensberckmoes.personal_finance_tracker.service.AppUserService;
-import be.jensberckmoes.personal_finance_tracker.service.ValidationService;
+import be.jensberckmoes.personal_finance_tracker.service.AppUserValidationService;
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -25,7 +26,7 @@ import java.util.List;
 public class AppUserController {
 
     private final AppUserService appUserService;
-    private final ValidationService validationService;
+    private final AppUserValidationService validationService;
 
     @PostMapping
     public ResponseEntity<AppUserDto> createUser(@RequestBody @Valid final AppUserCreateDto appUserCreateDto) {
@@ -38,7 +39,9 @@ public class AppUserController {
     @GetMapping
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<AppUserDto> getUserByUsername(@RequestParam final String username) {
-        if (!validationService.isValidUsername(username)) {
+        try {
+            validationService.validateUsername(username);
+        } catch (final InvalidAppUserNameException exception) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid username format");
         }
 

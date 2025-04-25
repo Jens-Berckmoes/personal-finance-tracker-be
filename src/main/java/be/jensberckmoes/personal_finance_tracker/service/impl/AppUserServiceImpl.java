@@ -1,4 +1,4 @@
-package be.jensberckmoes.personal_finance_tracker.service;
+package be.jensberckmoes.personal_finance_tracker.service.impl;
 
 import be.jensberckmoes.personal_finance_tracker.dto.AppUserCreateDto;
 import be.jensberckmoes.personal_finance_tracker.dto.AppUserDto;
@@ -8,6 +8,9 @@ import be.jensberckmoes.personal_finance_tracker.model.AppUser;
 import be.jensberckmoes.personal_finance_tracker.model.AppUserEntityMapper;
 import be.jensberckmoes.personal_finance_tracker.model.Role;
 import be.jensberckmoes.personal_finance_tracker.repository.AppUserRepository;
+import be.jensberckmoes.personal_finance_tracker.service.AppUserService;
+import be.jensberckmoes.personal_finance_tracker.service.AppUserValidationService;
+import be.jensberckmoes.personal_finance_tracker.service.HashingService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataAccessException;
 import org.springframework.data.domain.Page;
@@ -24,27 +27,17 @@ import java.util.function.Consumer;
 public class AppUserServiceImpl implements AppUserService {
     private final AppUserRepository appUserRepository;
     private final HashingService hashingService;
-    private final ValidationService validationService;
+    private final AppUserValidationService validationService;
     private final AppUserEntityMapper appUserEntityMapper;
 
     @Override
     public AppUserDto createUser(final AppUserCreateDto appUserCreateDto) {
         try {
-            if (Objects.isNull(appUserCreateDto)) {
-                throw new NullParameterException("Parameter 'userUpdateDto' cannot be null");
-            }
+            validationService.validateAppUserCreateDto(appUserCreateDto);
             if (appUserRepository.existsByUsername(appUserCreateDto.getUsername())) {
                 throw new DuplicateUsernameException("Username already taken");
             }
-            if (!validationService.isValidUsername(appUserCreateDto.getUsername())) {
-                throw new InvalidAppUserException("Username is invalid");
-            }
-            if (!validationService.isValidPassword(appUserCreateDto.getPassword())) {
-                throw new InvalidPasswordException("User has invalid password. Password should be between 12-255 characters long, should contain 1 uppercase, 1 lowercase, 1 number and 1 special character(!.*_-).");
-            }
-            if (!validationService.isValidEmail(appUserCreateDto.getEmail())) {
-                throw new InvalidEmailException("User has invalid email. Email should be in the form (test@example.com).");
-            }
+
             final AppUser appUser = AppUser.builder()
                     .username(appUserCreateDto.getUsername())
                     .password(hashingService.hashPassword(appUserCreateDto.getPassword()))
@@ -61,26 +54,15 @@ public class AppUserServiceImpl implements AppUserService {
 
     @Override
     public AppUserDto getUserById(final Long id) {
-        if (Objects.isNull(id) || id <= 0) {
-            throw new InvalidAppUserIDException("ID must be a positive number");
-        }
-        final AppUser foundAppUser = appUserRepository.findById(id).orElseThrow(() -> new InvalidAppUserException("Username does not exist"));
+        validationService.validateUserId(id);
+        final AppUser foundAppUser = appUserRepository.findById(id).orElseThrow(() -> new InvalidAppUserNameException("Username does not exist"));
         return appUserEntityMapper.mapToDto(foundAppUser);
     }
 
     @Override
     public AppUserDto findByUsername(final String username) {
-        if (Objects.isNull(username)) {
-            throw new NullParameterException("Parameter 'username' cannot be null");
-        }
-        if(username.isBlank()){
-            throw new BlankParameterException("Parameter 'username' cannot be blank");
-        }
-        final String lowerCaseUserName = username.toLowerCase();
-        if (!validationService.isValidUsername(lowerCaseUserName)) {
-            throw new InvalidAppUserException("Username is invalid");
-        }
-        final AppUser foundAppUser = appUserRepository.findByUsername(username).orElseThrow(() -> new InvalidAppUserException("Username does not exist"));
+        validationService.validateUsername(username);
+        final AppUser foundAppUser = appUserRepository.findByUsername(username).orElseThrow(() -> new InvalidAppUserNameException("Username does not exist"));
         return appUserEntityMapper.mapToDto(foundAppUser);
     }
 
@@ -111,12 +93,8 @@ public class AppUserServiceImpl implements AppUserService {
     @Override
     public AppUserDto updateUser(final Long id,
                                  final AppUserUpdateDto appUserUpdateDto) {
-        if(Objects.isNull(id) || Objects.isNull(appUserUpdateDto)){
-            throw new NullParameterException("Parameters 'id' and 'userUpdateDto' cannot be null");
-        }
-        if (!validationService.isValidEmail(appUserUpdateDto.getEmail())) {
-            throw new InvalidEmailException("Invalid email format");
-        }
+        validationService.validateUserId(id);
+        validationService.validateAppUserUpdateDto(appUserUpdateDto);
         if (appUserRepository.existsByEmail(appUserUpdateDto.getEmail())) {
             throw new DuplicateEmailException("Email already in use");
         }

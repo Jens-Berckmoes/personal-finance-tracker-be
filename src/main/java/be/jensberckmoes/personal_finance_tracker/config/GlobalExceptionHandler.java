@@ -24,8 +24,8 @@ public class GlobalExceptionHandler {
         return ResponseEntity.badRequest().body(ex.getMessage());
     }
 
-    @ExceptionHandler(InvalidAppUserException.class)
-    public ResponseEntity<String> handleInvalidAppUserException(final InvalidAppUserException ex) {
+    @ExceptionHandler(InvalidAppUserNameException.class)
+    public ResponseEntity<String> handleInvalidAppUserException(final InvalidAppUserNameException ex) {
         if ("Username does not exist".equals(ex.getMessage())) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ex.getMessage());
         }

@@ -25,9 +25,9 @@ public class AppUser {
     @Size(min = 12, max = 255, message = "Password must be between 12 and 255 characters.")
     @Column(nullable = false)
     private String password;
-    @Size(min = 2, max = 255, message = "E-mail must be between 2 and 255 characters.")
+    @Size(min = 6, max = 255, message = "E-mail must be between 2 and 255 characters.")
     @Column(nullable = false, unique = true)
-    @Pattern(regexp = "^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]+$", message = "E-mail must be in following format: (something@test.com)")
+    @Pattern(regexp = "^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$", message = "E-mail must be in following format: (something@test.com)")
     private String email;
     @Column(nullable = false)
     @Enumerated(EnumType.STRING)
