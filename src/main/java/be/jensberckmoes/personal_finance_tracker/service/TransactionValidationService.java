@@ -1,6 +1,6 @@
 package be.jensberckmoes.personal_finance_tracker.service;
 
-import be.jensberckmoes.personal_finance_tracker.dto.TransactionCreateDto;
+import be.jensberckmoes.personal_finance_tracker.dto.TransactionRequestDto;
 import be.jensberckmoes.personal_finance_tracker.exception.*;
 
 import java.math.BigDecimal;
@@ -8,9 +8,8 @@ import java.time.LocalDateTime;
 import java.util.Objects;
 
 public class TransactionValidationService {
-    public void validateTransactionCreateDto(final TransactionCreateDto dto) {
+    public void validateTransactionCreateDto(final TransactionRequestDto dto) {
         validateNotNull(dto);
-        validateUserId(dto);
         validateAmount(dto);
         validateType(dto);
         validateMethod(dto);
@@ -18,19 +17,19 @@ public class TransactionValidationService {
         validateDescription(dto);
     }
 
-    private static void validateNotNull(final TransactionCreateDto dto) {
+    private static void validateNotNull(final TransactionRequestDto dto) {
         if (Objects.isNull(dto)) {
             throw new NullParameterException("TransactionCreateDto cannot be null.");
         }
     }
 
-    private static void validateDescription(final TransactionCreateDto dto) {
+    private static void validateDescription(final TransactionRequestDto dto) {
         if (dto.getDescription() != null && dto.getDescription().length() > 255) {
             throw new InvalidTransactionDescriptionException("Description cannot exceed 255 characters.");
         }
     }
 
-    private static void validateDate(final TransactionCreateDto dto) {
+    private static void validateDate(final TransactionRequestDto dto) {
         if (Objects.isNull(dto.getDate())) {
             throw new NullTransactionDateException();
         }
@@ -40,13 +39,13 @@ public class TransactionValidationService {
         }
     }
 
-    private static void validateMethod(final TransactionCreateDto dto) {
+    private static void validateMethod(final TransactionRequestDto dto) {
         if (dto.getMethod() != null && dto.getMethod().toString().length() > 100) {
             throw new InvalidTransactionMethodException("Payment method cannot exceed 100 characters.");
         }
     }
 
-    private static void validateType(final TransactionCreateDto dto) {
+    private static void validateType(final TransactionRequestDto dto) {
         if (Objects.isNull(dto.getType())) {
             throw new NullTransactionTypeException();
         }
@@ -56,7 +55,7 @@ public class TransactionValidationService {
         }
     }
 
-    private static void validateAmount(final TransactionCreateDto dto) {
+    private static void validateAmount(final TransactionRequestDto dto) {
         if (Objects.isNull(dto.getAmount())) {
             throw new NullTransactionAmountException();
         }
@@ -74,9 +73,4 @@ public class TransactionValidationService {
         }
     }
 
-    private static void validateUserId(final TransactionCreateDto dto) {
-        if (Objects.isNull(dto.getUserId())) {
-            throw new NullUserIdException();
-        }
-    }
 }

@@ -14,7 +14,7 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-public class TransactionDto {
+public class TransactionResponseDto {
     private Long id;
     private Long userId;
     private Long categoryId;

@@ -1,9 +1,8 @@
 package be.jensberckmoes.personal_finance_tracker.unit.service;
 
-import be.jensberckmoes.personal_finance_tracker.dto.TransactionCreateDto;
-import be.jensberckmoes.personal_finance_tracker.dto.TransactionDto;
+import be.jensberckmoes.personal_finance_tracker.dto.TransactionRequestDto;
+import be.jensberckmoes.personal_finance_tracker.dto.TransactionResponseDto;
 import be.jensberckmoes.personal_finance_tracker.model.*;
-import be.jensberckmoes.personal_finance_tracker.repository.AppUserRepository;
 import be.jensberckmoes.personal_finance_tracker.repository.CategoryRepository;
 import be.jensberckmoes.personal_finance_tracker.repository.TransactionRepository;
 import be.jensberckmoes.personal_finance_tracker.service.impl.TransactionServiceImpl;
@@ -33,51 +32,39 @@ public class TransactionServiceTest {
     private CategoryRepository categoryRepository;
 
     @Mock
-    private TransactionEntityMapper transactionEntityMapper;
-
-    @Mock
-    private AppUserRepository appUserRepository;
+    private TransactionMapper transactionMapper;
 
     @InjectMocks
     private TransactionServiceImpl transactionService;
 
-    private AppUser user;
     private Category category;
-    private TransactionCreateDto transactionCreateDto;
+    private TransactionRequestDto transactionRequestDto;
     private Transaction transaction;
 
     @BeforeEach
     void setUp() {
-        user = AppUser.builder()
-                .id(1L)
-                .username("TESTUSER")
-                .password("TESTPASSWORD!123")
-                .email("testuser@test.be")
-                .role(Role.USER)
-                .build();
         category = Category.builder()
                 .id(1L)
                 .name("TESTNAME")
                 .build();
-        transactionCreateDto = createTransactionCreateDto().build();
+        transactionRequestDto = createTransactionCreateDto().build();
         transaction = createTransaction().build();
-        when(appUserRepository.findById(transactionCreateDto.getUserId())).thenReturn(Optional.of(user));
-        when(categoryRepository.findById(transactionCreateDto.getCategoryId())).thenReturn(Optional.of(category));
+        when(categoryRepository.findById(transactionRequestDto.getCategoryId())).thenReturn(Optional.of(category));
     }
 
     @Test
     public void givenValidTransaction_whenAddTransactions_thenTransactionIsPersisted() {
         transaction = createTransactionWithOptionalFields().build();
-        transactionCreateDto = createTransactionCreateDto()
+        transactionRequestDto = createTransactionCreateDto()
                 .method(TransactionMethod.BANK_TRANSFER)
                 .description("Groceries")
                 .build();
         final Transaction savedTransaction = createTransactionWithOptionalFields().id(1L).build();
         when(transactionRepository.save(transaction)).thenReturn(savedTransaction);
-        when(transactionEntityMapper.fromDto(any(TransactionCreateDto.class))).thenReturn(transaction);
-        final TransactionDto expectedDto = convertTransactionToDto(savedTransaction);
-        when(transactionEntityMapper.toDto(any(Transaction.class))).thenReturn(expectedDto);
-        final TransactionDto result = transactionService.addTransaction(transactionCreateDto);
+        when(transactionMapper.fromDto(any(TransactionRequestDto.class))).thenReturn(transaction);
+        final TransactionResponseDto expectedDto = convertTransactionToDto(savedTransaction);
+        when(transactionMapper.toDto(any(Transaction.class))).thenReturn(expectedDto);
+        final TransactionResponseDto result = transactionService.addTransaction(transactionRequestDto);
 
         assertThat(result).usingRecursiveAssertion().isEqualTo(expectedDto);
         verify(transactionRepository, times(1)).save(transaction);
@@ -87,10 +74,10 @@ public class TransactionServiceTest {
     public void givenValidTransactionWithOnlyNecessaryFields_whenAddTransactions_thenTransactionIsPersisted() {
         final Transaction savedTransaction = createTransaction().id(1L).build();
         when(transactionRepository.save(transaction)).thenReturn(savedTransaction);
-        when(transactionEntityMapper.fromDto(any(TransactionCreateDto.class))).thenReturn(transaction);
-        final TransactionDto expectedDto = convertTransactionToDto(savedTransaction);
-        when(transactionEntityMapper.toDto(any(Transaction.class))).thenReturn(expectedDto);
-        final TransactionDto result = transactionService.addTransaction(transactionCreateDto);
+        when(transactionMapper.fromDto(any(TransactionRequestDto.class))).thenReturn(transaction);
+        final TransactionResponseDto expectedDto = convertTransactionToDto(savedTransaction);
+        when(transactionMapper.toDto(any(Transaction.class))).thenReturn(expectedDto);
+        final TransactionResponseDto result = transactionService.addTransaction(transactionRequestDto);
 
         assertThat(result).usingRecursiveAssertion().isEqualTo(expectedDto);
         verify(transactionRepository, times(1)).save(transaction);
@@ -98,16 +85,14 @@ public class TransactionServiceTest {
 
     private Transaction.TransactionBuilder createTransaction() {
         return Transaction.builder()
-                .user(user)
                 .category(category)
                 .amount(new BigDecimal("50.00"))
                 .type(TransactionType.EXPENSE)
                 .date(LocalDateTime.of(LocalDate.of(2025, 4, 1), LocalTime.of(8, 40, 0)));
     }
 
-    private TransactionCreateDto.TransactionCreateDtoBuilder createTransactionCreateDto() {
-        return TransactionCreateDto.builder()
-                .userId(user.getId())
+    private TransactionRequestDto.TransactionRequestDtoBuilder createTransactionCreateDto() {
+        return TransactionRequestDto.builder()
                 .categoryId(category.getId())
                 .amount(new BigDecimal("50.00"))
                 .type(TransactionType.EXPENSE)
@@ -120,10 +105,9 @@ public class TransactionServiceTest {
                 .description("Groceries");
     }
 
-    private TransactionDto convertTransactionToDto(final Transaction transaction) {
-        TransactionDto dto = new TransactionDto();
+    private TransactionResponseDto convertTransactionToDto(final Transaction transaction) {
+        TransactionResponseDto dto = new TransactionResponseDto();
         dto.setId(transaction.getId());
-        dto.setUserId(transaction.getUser().getId());
         dto.setCategoryId(transaction.getCategory() != null ? transaction.getCategory().getId() : null);
         dto.setAmount(transaction.getAmount());
         dto.setType(transaction.getType());
