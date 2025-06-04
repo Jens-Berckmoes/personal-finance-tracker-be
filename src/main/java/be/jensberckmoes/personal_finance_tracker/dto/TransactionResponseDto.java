@@ -16,7 +16,6 @@ import java.time.LocalDateTime;
 @Builder
 public class TransactionResponseDto {
     private Long id;
-    private Long userId;
     private Long categoryId;
     private BigDecimal amount;
     private TransactionType type;
