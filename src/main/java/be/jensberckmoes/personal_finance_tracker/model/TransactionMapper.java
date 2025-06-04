@@ -2,6 +2,7 @@ package be.jensberckmoes.personal_finance_tracker.model;
 
 import be.jensberckmoes.personal_finance_tracker.dto.TransactionRequestDto;
 import be.jensberckmoes.personal_finance_tracker.dto.TransactionResponseDto;
+import be.jensberckmoes.personal_finance_tracker.model.entity.Transaction;
 import org.springframework.stereotype.Component;
 
 @Component

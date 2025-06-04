@@ -1,4 +1,4 @@
-package be.jensberckmoes.personal_finance_tracker.model;
+package be.jensberckmoes.personal_finance_tracker.model.enums;
 
 public enum TransactionCategory {
     HOUSING,

@@ -1,7 +1,7 @@
 package be.jensberckmoes.personal_finance_tracker.dto;
 
-import be.jensberckmoes.personal_finance_tracker.model.TransactionMethod;
-import be.jensberckmoes.personal_finance_tracker.model.TransactionType;
+import be.jensberckmoes.personal_finance_tracker.model.enums.TransactionMethod;
+import be.jensberckmoes.personal_finance_tracker.model.enums.TransactionType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;

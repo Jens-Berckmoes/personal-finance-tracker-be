@@ -1,5 +1,7 @@
-package be.jensberckmoes.personal_finance_tracker.model;
+package be.jensberckmoes.personal_finance_tracker.model.entity;
 
+import be.jensberckmoes.personal_finance_tracker.model.enums.TransactionMethod;
+import be.jensberckmoes.personal_finance_tracker.model.enums.TransactionType;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
