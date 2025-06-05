@@ -14,6 +14,8 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.Optional;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -55,16 +57,16 @@ public class CategoryServiceTest {
                 .categoryGroupType(categoryToCreate.getCategoryGroupType())
                 .build();
 
-        when(categoryMapper.toEntity(any(CategoryRequestDto.class))).thenReturn(categoryToCreate);
+        when(categoryMapper.toEntity(any(CategoryRequestDto.class))).thenReturn(Optional.of(categoryToCreate));
         when(categoryRepository.save(any(Category.class))).thenReturn(savedCategoryMock);
         when(categoryMapper.toResponse(any(Category.class)))
-                .thenReturn(CategoryResponseDto.builder()
+                .thenReturn(Optional.of(CategoryResponseDto.builder()
                         .id(savedCategoryMock.getId())
                         .name(savedCategoryMock.getName())
                         .description(savedCategoryMock.getDescription())
                         .categoryType(savedCategoryMock.getCategoryType())
                         .categoryGroupType(savedCategoryMock.getCategoryGroupType())
-                        .build());
+                        .build()));
 
         final CategoryResponseDto createdCategoryResponse = categoryService.createCategory(categoryRequestDto);
 
