@@ -60,14 +60,14 @@ public class TransactionServiceTest {
     public void givenValidTransaction_whenAddTransactions_thenTransactionIsPersisted() {
         transaction = createTransactionWithOptionalFields().build();
         transactionRequestDto = createTransactionCreateDto()
-                .method(TransactionMethod.BANK_TRANSFER)
+                .method(TransactionMethod.DIRECT_DEBIT)
                 .description("Groceries")
                 .build();
         final Transaction savedTransaction = createTransactionWithOptionalFields().id(1L).build();
         when(transactionRepository.save(transaction)).thenReturn(savedTransaction);
-        when(transactionMapper.fromDto(any(TransactionRequestDto.class))).thenReturn(transaction);
+        when(transactionMapper.toEntity(any(TransactionRequestDto.class))).thenReturn(Optional.of(transaction));
         final TransactionResponseDto expectedDto = convertTransactionToDto(savedTransaction);
-        when(transactionMapper.toDto(any(Transaction.class))).thenReturn(expectedDto);
+        when(transactionMapper.toResponse(any(Transaction.class))).thenReturn(Optional.of(expectedDto));
         final TransactionResponseDto result = transactionService.addTransaction(transactionRequestDto);
 
         assertThat(result).usingRecursiveAssertion().isEqualTo(expectedDto);
@@ -78,9 +78,9 @@ public class TransactionServiceTest {
     public void givenValidTransactionWithOnlyNecessaryFields_whenAddTransactions_thenTransactionIsPersisted() {
         final Transaction savedTransaction = createTransaction().id(1L).build();
         when(transactionRepository.save(transaction)).thenReturn(savedTransaction);
-        when(transactionMapper.fromDto(any(TransactionRequestDto.class))).thenReturn(transaction);
+        when(transactionMapper.toEntity(any(TransactionRequestDto.class))).thenReturn(Optional.of(transaction));
         final TransactionResponseDto expectedDto = convertTransactionToDto(savedTransaction);
-        when(transactionMapper.toDto(any(Transaction.class))).thenReturn(expectedDto);
+        when(transactionMapper.toResponse(any(Transaction.class))).thenReturn(Optional.of(expectedDto));
         final TransactionResponseDto result = transactionService.addTransaction(transactionRequestDto);
 
         assertThat(result).usingRecursiveAssertion().isEqualTo(expectedDto);
@@ -105,7 +105,7 @@ public class TransactionServiceTest {
 
     private Transaction.TransactionBuilder createTransactionWithOptionalFields() {
         return createTransaction()
-                .method(TransactionMethod.BANK_TRANSFER)
+                .method(TransactionMethod.DIRECT_DEBIT)
                 .description("Groceries");
     }
 
