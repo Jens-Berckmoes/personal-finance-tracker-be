@@ -12,7 +12,7 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class CategoryMapperTest {
+class CategoryMapperTest {
 
     private CategoryMapper categoryMapper;
 
@@ -22,8 +22,8 @@ public class CategoryMapperTest {
     }
 
     @Test
-    @DisplayName("should map Category entity to CategoryResponseDto successfully")
-    void toResponse_shouldMapCategoryToDto() {
+    @DisplayName("Should map Category entity to CategoryResponseDto successfully")
+    void givenCategory_whenToResponse_thenReturnsCorrectDto() {
         final Category category = Category.builder()
                 .id(1L)
                 .name("Electronics")
@@ -36,7 +36,6 @@ public class CategoryMapperTest {
 
         assertThat(optionalDto).isPresent();
         final CategoryResponseDto dto = optionalDto.get();
-
         assertThat(dto.getId()).isEqualTo(category.getId());
         assertThat(dto.getName()).isEqualTo(category.getName());
         assertThat(dto.getDescription()).isEqualTo(category.getDescription());
@@ -45,16 +44,15 @@ public class CategoryMapperTest {
     }
 
     @Test
-    @DisplayName("should return empty Optional when mapping null Category to CategoryResponseDto")
-    void toResponse_shouldReturnEmptyOptional_whenCategoryIsNull() {
+    @DisplayName("Should return empty Optional when mapping null Category to CategoryResponseDto")
+    void givenNullCategory_whenToResponse_thenReturnsEmptyOptional() {
         final Optional<CategoryResponseDto> optionalDto = categoryMapper.toResponse(null);
-
         assertThat(optionalDto).isEmpty();
     }
 
     @Test
-    @DisplayName("should map CategoryRequestDto to Category entity successfully")
-    void toEntity_shouldMapDtoToCategory() {
+    @DisplayName("Should map CategoryRequestDto to Category entity successfully")
+    void givenCategoryRequestDto_whenToEntity_thenReturnsCorrectCategory() {
         final CategoryRequestDto dto = CategoryRequestDto.builder()
                 .name("Books")
                 .description("Literary works")
@@ -66,24 +64,23 @@ public class CategoryMapperTest {
 
         assertThat(optionalCategory).isPresent();
         final Category category = optionalCategory.get();
-
         assertThat(category.getName()).isEqualTo(dto.getName());
         assertThat(category.getDescription()).isEqualTo(dto.getDescription());
         assertThat(category.getCategoryType()).isEqualTo(dto.getCategoryType());
         assertThat(category.getCategoryGroupType()).isEqualTo(dto.getCategoryGroupType());
+        assertThat(category.getId()).isNull();
     }
 
     @Test
-    @DisplayName("should return empty Optional when mapping null CategoryRequestDto to Category entity")
-    void toEntity_shouldReturnEmptyOptional_whenDtoIsNull() {
+    @DisplayName("Should return empty Optional when mapping null CategoryRequestDto to Category entity")
+    void givenNullCategoryRequestDto_whenToEntity_thenReturnsEmptyOptional() {
         final Optional<Category> optionalCategory = categoryMapper.toEntity(null);
-
         assertThat(optionalCategory).isEmpty();
     }
 
     @Test
-    @DisplayName("should map Category with null description to DTO with null description")
-    void toResponse_shouldHandleNullDescription() {
+    @DisplayName("Should map Category with null description to DTO with null description")
+    void givenCategoryWithNullDescription_whenToResponse_thenDescriptionIsNullInDto() {
         final Category category = Category.builder()
                 .id(2L)
                 .name("Food")
@@ -100,8 +97,8 @@ public class CategoryMapperTest {
     }
 
     @Test
-    @DisplayName("should map CategoryRequestDto with null description to Entity with null description")
-    void toEntity_shouldHandleNullDescriptionInDto() {
+    @DisplayName("Should map CategoryRequestDto with null description to Entity with null description")
+    void givenCategoryRequestDtoWithNullDescription_whenToEntity_thenDescriptionIsNullInEntity() {
         final CategoryRequestDto dto = CategoryRequestDto.builder()
                 .name("Services")
                 .description(null)
