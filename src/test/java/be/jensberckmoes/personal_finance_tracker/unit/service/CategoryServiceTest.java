@@ -18,7 +18,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
@@ -33,56 +33,6 @@ public class CategoryServiceTest {
 
     @InjectMocks
     private CategoryServiceImpl categoryService;
-
-    @Test
-    @DisplayName("Should successfully create a new category with valid details")
-    void givenValidCategory_whenCreate_thenCategorySuccessfullyCreated() {
-        final Category categoryToCreate = Category.builder()
-                .name("Groceries")
-                .description("Daily food and household items")
-                .categoryType(CategoryType.EXPENSE)
-                .categoryGroupType("EXPENSE_FOOD")
-                .build();
-        final Category savedCategoryMock = Category.builder()
-                .id(1L)
-                .name(categoryToCreate.getName())
-                .description(categoryToCreate.getDescription())
-                .categoryType(categoryToCreate.getCategoryType())
-                .categoryGroupType(categoryToCreate.getCategoryGroupType())
-                .build();
-        final CategoryRequestDto categoryRequestDto = CategoryRequestDto.builder()
-                .name(categoryToCreate.getName())
-                .description(categoryToCreate.getDescription())
-                .categoryType(categoryToCreate.getCategoryType())
-                .categoryGroupType(categoryToCreate.getCategoryGroupType())
-                .build();
-
-        when(categoryMapper.toEntity(any(CategoryRequestDto.class))).thenReturn(Optional.of(categoryToCreate));
-        when(categoryRepository.save(any(Category.class))).thenReturn(savedCategoryMock);
-        when(categoryMapper.toResponse(any(Category.class)))
-                .thenReturn(Optional.of(CategoryResponseDto.builder()
-                        .id(savedCategoryMock.getId())
-                        .name(savedCategoryMock.getName())
-                        .description(savedCategoryMock.getDescription())
-                        .categoryType(savedCategoryMock.getCategoryType())
-                        .categoryGroupType(savedCategoryMock.getCategoryGroupType())
-                        .build()));
-
-        final CategoryResponseDto createdCategoryResponse = categoryService.createCategory(categoryRequestDto);
-
-        assertThat(createdCategoryResponse).isNotNull();
-        assertThat(createdCategoryResponse.getId()).isNotNull();
-        assertAll(
-                () -> assertEquals("Groceries", createdCategoryResponse.getName(), "Name should match"),
-                () -> assertEquals("Daily food and household items", createdCategoryResponse.getDescription(), "Description should match"),
-                () -> assertEquals(CategoryType.EXPENSE, createdCategoryResponse.getCategoryType(), "CategoryType should match"),
-                () -> assertEquals("EXPENSE_FOOD", createdCategoryResponse.getCategoryGroupType(), "CategoryGroupType should match")
-        );
-
-        verify(categoryMapper, times(1)).toEntity(categoryRequestDto);
-        verify(categoryRepository, times(1)).save(categoryToCreate);
-        verify(categoryMapper, times(1)).toResponse(savedCategoryMock);
-    }
 
     @Test
     @DisplayName("Should throw DuplicateCategoryNameException when category name already exists")
@@ -103,15 +53,64 @@ public class CategoryServiceTest {
                 .categoryGroupType("EXPENSE_FOOD")
                 .build();
 
-        when(categoryMapper.toEntity(newCategoryRequestDto)).thenReturn(Optional.of(existingCategory));
         when(categoryRepository.findByName(duplicateCategoryName)).thenReturn(Optional.of(existingCategory));
         assertThrows(DuplicateCategoryNameException.class, () ->
                 categoryService.createCategory(newCategoryRequestDto)
         );
-        verify(categoryMapper, times(1)).toEntity(newCategoryRequestDto);
+
         verify(categoryRepository, times(1)).findByName(duplicateCategoryName);
         verify(categoryRepository, never()).save(any(Category.class));
         verify(categoryMapper, never()).toResponse(any(Category.class));
+    }
+
+    @Test
+    @DisplayName("Should create category successfully when name does not exist")
+    void givenUniqueCategoryName_whenCreateCategory_thenReturnsCreatedCategoryResponseDto() {
+        final String uniqueCategoryName = "New Unique Category";
+        final Category categoryToSave = Category.builder()
+                .name(uniqueCategoryName)
+                .description("A brand new category")
+                .categoryType(CategoryType.INCOME)
+                .categoryGroupType("INCOME_WORK")
+                .build();
+        final Category savedCategory = Category.builder()
+                .id(2L)
+                .name(uniqueCategoryName)
+                .description("A brand new category")
+                .categoryType(CategoryType.INCOME)
+                .categoryGroupType("INCOME_WORK")
+                .build();
+        final CategoryRequestDto newCategoryRequestDto = CategoryRequestDto.builder()
+                .name(uniqueCategoryName)
+                .description("A brand new category")
+                .categoryType(CategoryType.INCOME)
+                .categoryGroupType("INCOME_WORK")
+                .build();
+        final CategoryResponseDto expectedResponseDto = CategoryResponseDto.builder()
+                .id(2L)
+                .name(uniqueCategoryName)
+                .description("A brand new category")
+                .categoryType(CategoryType.INCOME)
+                .categoryGroupType("INCOME_WORK")
+                .build();
+
+        doReturn(Optional.of(categoryToSave))
+                .when(categoryMapper).toEntity(newCategoryRequestDto);
+        when(categoryRepository.findByName(uniqueCategoryName)).thenReturn(Optional.empty());
+        when(categoryRepository.save(any(Category.class))).thenReturn(savedCategory);
+        doReturn(Optional.of(expectedResponseDto))
+                .when(categoryMapper).toResponse(savedCategory);
+
+        CategoryResponseDto actualResponseDto = categoryService.createCategory(newCategoryRequestDto);
+
+        assertThat(actualResponseDto).isNotNull();
+        assertThat(actualResponseDto.getId()).isEqualTo(expectedResponseDto.getId());
+        assertThat(actualResponseDto.getName()).isEqualTo(expectedResponseDto.getName());
+
+        verify(categoryMapper, times(1)).toEntity(newCategoryRequestDto);
+        verify(categoryRepository, times(1)).findByName(uniqueCategoryName);
+        verify(categoryRepository, times(1)).save(categoryToSave);
+        verify(categoryMapper, times(1)).toResponse(savedCategory);
     }
 
 }
