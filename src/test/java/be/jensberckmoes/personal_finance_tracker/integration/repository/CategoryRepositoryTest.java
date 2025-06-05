@@ -211,6 +211,44 @@ public class CategoryRepositoryTest {
     }
 
     @Test
+    public void givenSavedCategory_whenFindByName_thenIsFoundCorrectly() {
+        final Category category = Category.builder()
+                .name("TEST")
+                .categoryType(CategoryType.EXPENSE)
+                .categoryGroupType("EXPENSE_TEST")
+                .build();
+        final Category savedCategory = categoryRepository.save(category);
+        final Optional<Category> possibleFoundCategory = categoryRepository.findByName(savedCategory.getName());
+
+        assertTrue(possibleFoundCategory.isPresent());
+        final Category foundCategory = possibleFoundCategory.get();
+
+        assertAll(
+                () -> assertEquals("TEST", foundCategory.getName()),
+                () -> assertNull(foundCategory.getDescription()),
+                () -> assertNotNull(foundCategory.getId()),
+                () -> assertEquals(savedCategory.getId(), foundCategory.getId()),
+                () -> assertEquals(CategoryType.EXPENSE, foundCategory.getCategoryType()),
+                () -> assertEquals("EXPENSE_TEST", foundCategory.getCategoryGroupType())
+        );
+    }
+
+    @Test
+    public void givenWrongCategoryName_whenFindByName_thenIsEmpty() {
+        final Category category = Category.builder()
+                .name("TEST")
+                .categoryType(CategoryType.EXPENSE)
+                .categoryGroupType("EXPENSE_TEST")
+                .build();
+        final Category savedCategory = categoryRepository.save(category);
+        assertEquals("TEST", savedCategory.getName());
+        assertThat(categoryRepository.findAll()).hasSize(1);
+        final Optional<Category> possibleFoundCategory = categoryRepository.findByName("-");
+
+        assertTrue(possibleFoundCategory.isEmpty());
+    }
+
+    @Test
     public void givenSavedCategory_whenModifyNameAndSave_thenIsUpdatedCorrectly() {
         final Category categoryToSave = Category.builder()
                 .name("HOUSING")

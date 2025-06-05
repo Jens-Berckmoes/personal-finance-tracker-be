@@ -2,6 +2,7 @@ package be.jensberckmoes.personal_finance_tracker.unit.service;
 
 import be.jensberckmoes.personal_finance_tracker.dto.CategoryRequestDto;
 import be.jensberckmoes.personal_finance_tracker.dto.CategoryResponseDto;
+import be.jensberckmoes.personal_finance_tracker.exception.DuplicateCategoryNameException;
 import be.jensberckmoes.personal_finance_tracker.model.CategoryMapper;
 import be.jensberckmoes.personal_finance_tracker.model.entity.Category;
 import be.jensberckmoes.personal_finance_tracker.model.enums.CategoryType;
@@ -17,8 +18,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertAll;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
@@ -82,6 +82,36 @@ public class CategoryServiceTest {
         verify(categoryMapper, times(1)).toEntity(categoryRequestDto);
         verify(categoryRepository, times(1)).save(categoryToCreate);
         verify(categoryMapper, times(1)).toResponse(savedCategoryMock);
+    }
+
+    @Test
+    @DisplayName("Should throw DuplicateCategoryNameException when category name already exists")
+    void givenExistingCategoryName_whenCreateCategory_thenThrowsDuplicateCategoryNameException() {
+        final String duplicateCategoryName = "Groceries";
+        final Category existingCategory = Category.builder()
+                .id(1L)
+                .name(duplicateCategoryName)
+                .description("Existing daily food items")
+                .categoryType(CategoryType.EXPENSE)
+                .categoryGroupType("EXPENSE_FOOD")
+                .build();
+
+        final CategoryRequestDto newCategoryRequestDto = CategoryRequestDto.builder()
+                .name(duplicateCategoryName)
+                .description("New groceries description")
+                .categoryType(CategoryType.EXPENSE)
+                .categoryGroupType("EXPENSE_FOOD")
+                .build();
+
+        when(categoryMapper.toEntity(newCategoryRequestDto)).thenReturn(Optional.of(existingCategory));
+        when(categoryRepository.findByName(duplicateCategoryName)).thenReturn(Optional.of(existingCategory));
+        assertThrows(DuplicateCategoryNameException.class, () ->
+                categoryService.createCategory(newCategoryRequestDto)
+        );
+        verify(categoryMapper, times(1)).toEntity(newCategoryRequestDto);
+        verify(categoryRepository, times(1)).findByName(duplicateCategoryName);
+        verify(categoryRepository, never()).save(any(Category.class));
+        verify(categoryMapper, never()).toResponse(any(Category.class));
     }
 
 }
