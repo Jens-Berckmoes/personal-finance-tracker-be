@@ -80,11 +80,11 @@ public class CategoryRepositoryTest {
         assertThrows(DataIntegrityViolationException.class, () -> categoryRepository.save(secondCategoryToSave));
     }
 
-    @ParameterizedTest(name = "{index}: {1}") // Use the testDescription from method source
+    @ParameterizedTest(name = "{index}: {1}")
     @MethodSource("invalidCategoryNames")
     @DisplayName("Should throw exception when saving category with invalid name property")
     void givenCategoryWithInvalidNameProperty_whenSave_thenThrowsException(String invalidName, String testDescription) {
-        // Given
+
         final Category category = Category.builder()
                 .name(invalidName)
                 .description("Test Description for " + testDescription)
@@ -112,11 +112,11 @@ public class CategoryRepositoryTest {
         assertThrows(ConstraintViolationException.class, () -> categoryRepository.save(category));
     }
 
-    @ParameterizedTest(name = "{index}: {1}") // Added testDescription to MethodSource for clarity
+    @ParameterizedTest(name = "{index}: {1}")
     @MethodSource("invalidCategoryGroupTypes")
     @DisplayName("Should throw exception when saving category with invalid categoryGroupType property")
     void givenCategoryWithInvalidCategoryGroupTypeProperty_whenSave_thenThrowsException(final String invalidCategoryGroupType, final String testDescription) {
-        // Given
+
         final Category category = Category.builder()
                 .name("TEST")
                 .description("Test Description for " + testDescription)

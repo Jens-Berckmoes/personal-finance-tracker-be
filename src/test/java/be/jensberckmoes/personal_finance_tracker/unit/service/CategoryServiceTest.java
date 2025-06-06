@@ -3,6 +3,7 @@ package be.jensberckmoes.personal_finance_tracker.unit.service;
 import be.jensberckmoes.personal_finance_tracker.dto.CategoryRequestDto;
 import be.jensberckmoes.personal_finance_tracker.dto.CategoryResponseDto;
 import be.jensberckmoes.personal_finance_tracker.exception.DuplicateCategoryNameException;
+import be.jensberckmoes.personal_finance_tracker.exception.InvalidInputException;
 import be.jensberckmoes.personal_finance_tracker.model.CategoryMapper;
 import be.jensberckmoes.personal_finance_tracker.model.entity.Category;
 import be.jensberckmoes.personal_finance_tracker.model.enums.CategoryType;
@@ -101,7 +102,7 @@ public class CategoryServiceTest {
         doReturn(Optional.of(expectedResponseDto))
                 .when(categoryMapper).toResponse(savedCategory);
 
-        CategoryResponseDto actualResponseDto = categoryService.createCategory(newCategoryRequestDto);
+        final CategoryResponseDto actualResponseDto = categoryService.createCategory(newCategoryRequestDto);
 
         assertThat(actualResponseDto).isNotNull();
         assertThat(actualResponseDto.getId()).isEqualTo(expectedResponseDto.getId());
@@ -111,6 +112,20 @@ public class CategoryServiceTest {
         verify(categoryRepository, times(1)).findByName(uniqueCategoryName);
         verify(categoryRepository, times(1)).save(categoryToSave);
         verify(categoryMapper, times(1)).toResponse(savedCategory);
+    }
+
+    @Test
+    @DisplayName("Should throw InvalidInputException when CategoryRequestDto is null")
+    void givenNullCategoryRequestDto_whenCreateCategory_thenThrowsInvalidInputException() {
+        final InvalidInputException thrown = assertThrows(InvalidInputException.class, () ->
+                categoryService.createCategory(null)
+        );
+
+        assertThat(thrown.getMessage()).isEqualTo("CategoryRequestDto cannot be null.");
+
+        verify(categoryRepository, never()).findByName(any(String.class)); // findByName should not be called
+        verify(categoryRepository, never()).save(any(Category.class)); // save should not be called
+        verify(categoryMapper, never()).toResponse(any(Category.class)); // toResponse should not be called
     }
 
 }

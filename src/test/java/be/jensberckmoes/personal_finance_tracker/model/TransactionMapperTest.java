@@ -29,7 +29,6 @@ class TransactionMapperTest {
     @Test
     @DisplayName("Should map Transaction entity to TransactionResponseDto successfully")
     void givenTransaction_whenToResponse_thenReturnsCorrectDto() {
-        // Given
         final Category category = Category.builder()
                 .id(101L)
                 .name("Groceries")
@@ -44,10 +43,8 @@ class TransactionMapperTest {
                 .type(TransactionType.EXPENSE)
                 .build();
 
-        // When
         final Optional<TransactionResponseDto> optionalDto = transactionMapper.toResponse(transaction);
-
-        // Then
+        
         assertThat(optionalDto).isPresent();
         final TransactionResponseDto dto = optionalDto.get();
         assertThat(dto.getId()).isEqualTo(transaction.getId());
@@ -62,10 +59,9 @@ class TransactionMapperTest {
     @Test
     @DisplayName("Should throw NullPointerException when mapping Transaction with null Category to TransactionResponseDto")
     void givenTransactionWithNullCategory_whenToResponse_thenThrowsNullPointerException() {
-        // Given
         final Transaction transaction = Transaction.builder()
                 .id(1L)
-                .category(null) // Category is null
+                .category(null) 
                 .date(LocalDateTime.of(2023, 1, 15,8,11,12))
                 .method(TransactionMethod.DIRECT_DEBIT)
                 .description("Weekly grocery shopping")
@@ -73,7 +69,6 @@ class TransactionMapperTest {
                 .type(TransactionType.EXPENSE)
                 .build();
 
-        // When / Then
         assertThrows(NullPointerException.class, () -> transactionMapper.toResponse(transaction),
                 "Should throw NullPointerException when category is null");
     }
@@ -81,37 +76,31 @@ class TransactionMapperTest {
     @Test
     @DisplayName("Should return empty Optional when mapping null Transaction to TransactionResponseDto")
     void givenNullTransaction_whenToResponse_thenReturnsEmptyOptional() {
-        // Given
         final Transaction transaction = null;
 
-        // When
         final Optional<TransactionResponseDto> optionalDto = transactionMapper.toResponse(transaction);
-
-        // Then
+        
         assertThat(optionalDto).isEmpty();
     }
 
     @Test
     @DisplayName("Should map TransactionRequestDto to Transaction entity successfully")
     void givenTransactionRequestDto_whenToEntity_thenReturnsCorrectTransaction() {
-        // Given
         final TransactionRequestDto dto = TransactionRequestDto.builder()
                 .categoryId(101L)
                 .date(LocalDateTime.of(2023, 2, 20,8,11,12))
                 .method(TransactionMethod.CREDIT_CARD)
                 .description("Online subscription")
                 .amount(new BigDecimal("12.99"))
-                .type(TransactionType.INCOME) // Changed to INCOME for variety
+                .type(TransactionType.INCOME) 
                 .build();
 
-        // When
         final Optional<Transaction> optionalTransaction = transactionMapper.toEntity(dto);
 
-        // Then
         assertThat(optionalTransaction).isPresent();
         final Transaction transaction = optionalTransaction.get();
-        assertThat(transaction.getId()).isNull(); // ID is not set by request DTO
-        assertThat(transaction.getCategory()).isNull(); // Category object not set by request DTO
+        assertThat(transaction.getId()).isNull(); 
+        assertThat(transaction.getCategory()).isNull(); 
         assertThat(transaction.getDate()).isEqualTo(dto.getDate());
         assertThat(transaction.getMethod()).isEqualTo(dto.getMethod());
         assertThat(transaction.getDescription()).isEqualTo(dto.getDescription());
@@ -122,20 +111,16 @@ class TransactionMapperTest {
     @Test
     @DisplayName("Should return empty Optional when mapping null TransactionRequestDto to Transaction entity")
     void givenNullTransactionRequestDto_whenToEntity_thenReturnsEmptyOptional() {
-        // Given
         final TransactionRequestDto dto = null;
 
-        // When
         final Optional<Transaction> optionalTransaction = transactionMapper.toEntity(dto);
 
-        // Then
         assertThat(optionalTransaction).isEmpty();
     }
 
     @Test
     @DisplayName("Should map Transaction with null description to DTO with null description")
     void givenTransactionWithNullDescription_whenToResponse_thenDescriptionIsNullInDto() {
-        // Given
         final Category category = Category.builder().id(102L).name("Utilities").build();
         final Transaction transaction = Transaction.builder()
                 .id(2L)
@@ -147,10 +132,8 @@ class TransactionMapperTest {
                 .type(TransactionType.EXPENSE)
                 .build();
 
-        // When
         final Optional<TransactionResponseDto> optionalDto = transactionMapper.toResponse(transaction);
 
-        // Then
         assertThat(optionalDto).isPresent();
         final TransactionResponseDto dto = optionalDto.get();
         assertThat(dto.getDescription()).isNull();
@@ -159,7 +142,6 @@ class TransactionMapperTest {
     @Test
     @DisplayName("Should map TransactionRequestDto with null description to Entity with null description")
     void givenTransactionRequestDtoWithNullDescription_whenToEntity_thenDescriptionIsNullInEntity() {
-        // Given
         final TransactionRequestDto dto = TransactionRequestDto.builder()
                 .categoryId(103L)
                 .date(LocalDateTime.of(2023, 4, 5,8,11,12))
@@ -169,10 +151,8 @@ class TransactionMapperTest {
                 .type(TransactionType.EXPENSE)
                 .build();
 
-        // When
         final Optional<Transaction> optionalTransaction = transactionMapper.toEntity(dto);
 
-        // Then
         assertThat(optionalTransaction).isPresent();
         final Transaction transaction = optionalTransaction.get();
         assertThat(transaction.getDescription()).isNull();
