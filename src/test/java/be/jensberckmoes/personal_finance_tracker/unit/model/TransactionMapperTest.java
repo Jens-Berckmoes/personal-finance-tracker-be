@@ -1,7 +1,8 @@
-package be.jensberckmoes.personal_finance_tracker.model;
+package be.jensberckmoes.personal_finance_tracker.unit.service.model;
 
 import be.jensberckmoes.personal_finance_tracker.dto.TransactionRequestDto;
 import be.jensberckmoes.personal_finance_tracker.dto.TransactionResponseDto;
+import be.jensberckmoes.personal_finance_tracker.model.TransactionMapper;
 import be.jensberckmoes.personal_finance_tracker.model.entity.Category;
 import be.jensberckmoes.personal_finance_tracker.model.entity.Transaction;
 import be.jensberckmoes.personal_finance_tracker.model.enums.TransactionMethod;

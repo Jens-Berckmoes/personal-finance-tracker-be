@@ -1,7 +1,8 @@
-package be.jensberckmoes.personal_finance_tracker.model;
+package be.jensberckmoes.personal_finance_tracker.unit.service.model;
 
 import be.jensberckmoes.personal_finance_tracker.dto.CategoryRequestDto;
 import be.jensberckmoes.personal_finance_tracker.dto.CategoryResponseDto;
+import be.jensberckmoes.personal_finance_tracker.model.CategoryMapper;
 import be.jensberckmoes.personal_finance_tracker.model.entity.Category;
 import be.jensberckmoes.personal_finance_tracker.model.enums.CategoryType;
 import org.junit.jupiter.api.BeforeEach;
