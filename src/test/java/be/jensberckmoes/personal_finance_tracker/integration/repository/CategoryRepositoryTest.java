@@ -218,7 +218,7 @@ public class CategoryRepositoryTest {
                 .categoryGroupType("EXPENSE_TEST")
                 .build();
         final Category savedCategory = categoryRepository.save(category);
-        final Optional<Category> possibleFoundCategory = categoryRepository.findByName(savedCategory.getName());
+        final Optional<Category> possibleFoundCategory = categoryRepository.findByNameIgnoreCase(savedCategory.getName());
 
         assertTrue(possibleFoundCategory.isPresent());
         final Category foundCategory = possibleFoundCategory.get();
@@ -243,7 +243,7 @@ public class CategoryRepositoryTest {
         final Category savedCategory = categoryRepository.save(category);
         assertEquals("TEST", savedCategory.getName());
         assertThat(categoryRepository.findAll()).hasSize(1);
-        final Optional<Category> possibleFoundCategory = categoryRepository.findByName("-");
+        final Optional<Category> possibleFoundCategory = categoryRepository.findByNameIgnoreCase("-");
 
         assertTrue(possibleFoundCategory.isEmpty());
     }
